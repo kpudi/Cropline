@@ -2,15 +2,19 @@ import { sb, signIn, signOut, getSession,
          loadSettings, saveSettings,
          loadItems, upsertItem, setBuyRate,
          loadClients, upsertClient, upsertCard,
-         loadBills, saveBill } from './db.js'
+         loadBills, saveBill,
+         loadOrders, updateOrderStatus,
+         loadCustomers, createCsmCustomer, setCustomerActive, linkCustomerToClient,
+         loadCustomerAddresses, adminSaveAddress, adminDeleteAddress } from './db.js'
 import { parseList } from './parser.js'
 import { S, CATS, today, uuid4, money, money0, dmy, addDays, addMonths,
          blankLine, blankDraft, rateFor, buyFor, calcTotals, activeCard } from './state.js'
-import { itemsView, clientsView, histView, setupView,
+import { itemsView, clientsView, histView, setupView, ordersView, customersView,
          buildBillPrint, buildCardPrint, cardTextWA, buyListTextWA,
          inWords,
          setIAsOn, setICat, setIQ, setOpenClient, setCQ, setCardSel, setAsOn,
-         iAsOn, iCat, iQ, openClient, cQ, cardSel, asOn } from './views.js'
+         iAsOn, iCat, iQ, openClient, cQ, cardSel, asOn,
+         setOStatus, setOQ, setCustQ, setCustOpen, setCsmForm, setCustAddrs, custOpen, custAddrs } from './views.js'
 
 /* ── seed data ── */
 const SEED_ITEMS = [{"name":"Red Tomato Big","unit":"KG","buy":28,"sell":35,"cat":"Other"},{"name":"Potato Big","unit":"KG","buy":20,"sell":26,"cat":"Other"},{"name":"Potato Baby","unit":"KG","buy":42,"sell":42,"cat":"Indian Veg"},{"name":"Onion Big","unit":"KG","buy":20,"sell":26,"cat":"Other"},{"name":"Sambar Onion","unit":"KG","buy":116,"sell":125,"cat":"Other"},{"name":"Garlic Hole","unit":"KG","buy":140,"sell":150,"cat":"Indian Veg"},{"name":"Garlic Peeled","unit":"KG","buy":178,"sell":210,"cat":"Other"},{"name":"Ginger","unit":"KG","buy":140,"sell":190,"cat":"Indian Veg"},{"name":"Coconut Fresh","unit":"PC","buy":40,"sell":45,"cat":"Other"},{"name":"Coriander Leaves","unit":"KG","buy":90,"sell":117,"cat":"Leafy Veg"},{"name":"Curry Leaf","unit":"KG","buy":30,"sell":100,"cat":"Leafy Veg"},{"name":"Mint Leaves","unit":"KG","buy":100,"sell":130,"cat":"Other"},{"name":"Microgreen","unit":"PACK","buy":120,"sell":160,"cat":"Exotic Veg"},{"name":"Chilli Green","unit":"KG","buy":50,"sell":90,"cat":"Indian Veg"},{"name":"Chilli Red","unit":"KG","buy":30,"sell":100,"cat":"Other"},{"name":"Capsicum Green","unit":"KG","buy":40,"sell":70,"cat":"Indian Veg"},{"name":"Capsicum Yellow","unit":"KG","buy":140,"sell":300,"cat":"Exotic Veg"},{"name":"Capsicum Red","unit":"KG","buy":140,"sell":300,"cat":"Exotic Veg"},{"name":"Cabbage Green","unit":"KG","buy":36,"sell":36,"cat":"Other"},{"name":"Cabbage Red","unit":"KG","buy":121,"sell":140,"cat":"Exotic Veg"},{"name":"Cabbage Chinese","unit":"KG","buy":131,"sell":135,"cat":"Exotic Veg"},{"name":"Cucumber","unit":"KG","buy":35,"sell":50,"cat":"Indian Veg"},{"name":"Cherry Tomato","unit":"KG","buy":190,"sell":205,"cat":"Exotic Veg"},{"name":"Zucchini Green","unit":"KG","buy":170,"sell":220,"cat":"Exotic Veg"},{"name":"Spinach  / Palak","unit":"KG","buy":90,"sell":100,"cat":"Other"},{"name":"Spring Onion","unit":"KG","buy":120,"sell":166.67,"cat":"Leafy Veg"},{"name":"Zucchini Yellow","unit":"KG","buy":170,"sell":220,"cat":"Exotic Veg"},{"name":"Baby Corn Pealed","unit":"KG","buy":152,"sell":180,"cat":"Other"},{"name":"French Beans","unit":"KG","buy":120,"sell":150,"cat":"Indian Veg"},{"name":"Red Carrot","unit":"KG","buy":48,"sell":62,"cat":"Other"},{"name":"Raw Jack Fruit","unit":"KG","buy":90,"sell":200,"cat":"Other"},{"name":"Cauliflower","unit":"KG","buy":32.5,"sell":60,"cat":"Indian Veg"},{"name":"Lotus Root","unit":"KG","buy":180,"sell":200,"cat":"Other"},{"name":"Lady Finger","unit":"KG","buy":40,"sell":52,"cat":"Indian Veg"},{"name":"Lemon Yellow","unit":"KG","buy":170,"sell":221,"cat":"Other"},{"name":"Fresh Mushroom","unit":"KG","buy":190,"sell":247,"cat":"Other"},{"name":"Yam Root","unit":"KG","buy":40,"sell":91,"cat":"Other"},{"name":"Beetroot","unit":"KG","buy":30,"sell":40,"cat":"Indian Veg"},{"name":"Broccoli","unit":"KG","buy":133,"sell":190,"cat":"Exotic Veg"},{"name":"Bok Choy","unit":"KG","buy":172,"sell":196,"cat":"Exotic Veg"},{"name":"Celery Pata","unit":"KG","buy":192,"sell":248,"cat":"Other"},{"name":"Bajji Chilly","unit":"KG","buy":56,"sell":66,"cat":"Other"},{"name":"Radish White","unit":"KG","buy":21,"sell":30,"cat":"Other"},{"name":"Radish Red","unit":"KG","buy":174,"sell":280,"cat":"Other"},{"name":"Raw Papaya","unit":"KG","buy":33,"sell":40,"cat":"Indian Veg"},{"name":"Raw Mango","unit":"KG","buy":60,"sell":90,"cat":"Indian Veg"},{"name":"Thyme Fresh","unit":"KG","buy":350,"sell":400,"cat":"Other"},{"name":"Parsley Fresh","unit":"KG","buy":200,"sell":300,"cat":"Other"},{"name":"Basil Fresh","unit":"KG","buy":170,"sell":250,"cat":"Other"},{"name":"Lemon Grass","unit":"KG","buy":188,"sell":235,"cat":"Exotic Veg"},{"name":"Thai Ginger","unit":"KG","buy":270,"sell":450,"cat":"Other"},{"name":"Dill Leaves","unit":"BUNCH","buy":300,"sell":360,"cat":"Leafy Veg"},{"name":"Avocado","unit":"KG","buy":256,"sell":584,"cat":"Other"},{"name":"Pomegranate","unit":"KG","buy":174,"sell":390,"cat":"Other"},{"name":"Pineapple","unit":"PC","buy":100,"sell":111,"cat":"Fresh Fruits"},{"name":"Misc","unit":"KG","buy":400,"sell":520,"cat":"Other"},{"name":"Raw Banana","unit":"KG","buy":91,"sell":118.5,"cat":"Indian Veg"},{"name":"Califlower","unit":"KG","buy":50,"sell":65,"cat":"Other"},{"name":"Bottle Gourd","unit":"PC","buy":33,"sell":50,"cat":"Indian Veg"},{"name":"Potato","unit":"KG","buy":20,"sell":28,"cat":"Indian Veg"},{"name":"Peeled Garlic","unit":"KG","buy":160,"sell":220,"cat":"Indian Veg"},{"name":"Banana Leaf","unit":"PC","buy":4,"sell":8,"cat":"Leafy Veg"},{"name":"Green Peas Frozen","unit":"KG","buy":130,"sell":170,"cat":"Frozen & Premium"},{"name":"Edible Flowers","unit":"PC","buy":174,"sell":240,"cat":"Exotic Veg"},{"name":"Oregano","unit":"KG","buy":540,"sell":700,"cat":"Other"},{"name":"Carrot","unit":"KG","buy":40,"sell":60,"cat":"Indian Veg"},{"name":"Red Capsicum","unit":"KG","buy":160,"sell":220,"cat":"Other"},{"name":"Yellow Capsicum","unit":"KG","buy":160,"sell":220,"cat":"Other"},{"name":"Green Capsicum","unit":"KG","buy":40,"sell":62,"cat":"Other"},{"name":"Tomato","unit":"KG","buy":40,"sell":49,"cat":"Other"},{"name":"Onion","unit":"KG","buy":14.5,"sell":24,"cat":"Other"},{"name":"Red Cabbage","unit":"KG","buy":80,"sell":128,"cat":"Other"},{"name":"Brinjal","unit":"KG","buy":30,"sell":55,"cat":"Other"},{"name":"Parval","unit":"KG","buy":40,"sell":80,"cat":"Indian Veg"},{"name":"Beans","unit":"KG","buy":90,"sell":120,"cat":"Other"},{"name":"Milk Heritage","unit":"L","buy":62,"sell":64,"cat":"Other"},{"name":"Lemon","unit":"KG","buy":90,"sell":130,"cat":"Indian Veg"},{"name":"Turi","unit":"KG","buy":45,"sell":80,"cat":"Other"},{"name":"Spinach","unit":"KG","buy":65,"sell":90,"cat":"Leafy Veg"},{"name":"Banana","unit":"KG","buy":60,"sell":78,"cat":"Fresh Fruits"},{"name":"Italian Basil G-A","unit":"KG","buy":620,"sell":800,"cat":"Other"},{"name":"Curd Godrej","unit":"KG","buy":99,"sell":115,"cat":"Other"},{"name":"Bitter Gourd","unit":"KG","buy":45,"sell":80,"cat":"Indian Veg"},{"name":"Sweet Corn","unit":"KG","buy":70,"sell":150,"cat":"Indian Veg"},{"name":"Basil","unit":"KG","buy":170,"sell":350,"cat":"Other"},{"name":"Kaffir Lime Leaves","unit":"KG","buy":1200,"sell":1560,"cat":"Exotic Veg"},{"name":"Celery","unit":"KG","buy":252,"sell":264,"cat":"Exotic Veg"},{"name":"Ivy Gourd","unit":"KG","buy":40,"sell":50,"cat":"Other"},{"name":"Bottle Gourd Big","unit":"PC","buy":30,"sell":45,"cat":"Other"},{"name":"Lemon Big","unit":"KG","buy":90,"sell":130,"cat":"Other"},{"name":"Arbi / Arvi","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Beans Long","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Big Brinjal","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Brinjal (Regular)","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Brinjal Bharat","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Brinjal Long","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Brinjal Small","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Brinjal White Small","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Cabbage","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Chikkudukaya (Hyacinth Beans)","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Chow Chow","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Cluster Beans","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Coconut","unit":"PC","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Coconut Water","unit":"L","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Cucumber European","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Dosakaya","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Drumsticks","unit":"PC","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Gokar Kaya","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Green Peas Fresh","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Jackfruit","unit":"PC","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Kaddu / Ash Gourd","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Madras Onion","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Onion (Large)","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Onion White","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Pumpkin Red","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Pumpkin White","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Pumpkin Yellow","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Radish (Mooli)","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Red Chilli Fresh","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Salan Chillies","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Snake Gourd","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Sweet Potato","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Tindli / Dondakaya","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Tomato Bangalore","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Tomato Local","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Turai / Ridged Gourd","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Yam","unit":"KG","buy":0,"sell":0,"cat":"Indian Veg","hist":[]},{"name":"Amaranth","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Bachalakura","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Chukkakura","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Gongura","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Methi / Fenugreek","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Mint","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Mustard Leaf","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Ponnagantikura","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Thotakura","unit":"KG","buy":0,"sell":0,"cat":"Leafy Veg","hist":[]},{"name":"Asparagus (Local)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Asparagus (Imported)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Avocado (Indian)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Avocado (Imported)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Baby Carrot","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Baby Corn","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Baby Rocket (Hydroponic)","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Basil Leaves","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Bok Choy (Hydroponic)","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Brussel Sprouts","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Galangal Ginger","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Herb Parsley","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Herb Rosemary","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Herb Thyme","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Italian Lemon","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Jalapeno","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Kale Leaf","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Leeks","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Frisee/Endive)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Green Leaf)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Green) Hydroponic","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Iceberg)","unit":"PC","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Lollo Rosso)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Lollo Rosso) Hydroponic","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Pak Choi)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Radicchio)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Rocket)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Romaine)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lettuce (Romaine) Hydroponic","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Lotus Stem","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Mushroom (Button)","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Sage","unit":"PACK","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Shalgam / Turnip","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Snow Peas","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Thai Red Chilli","unit":"KG","buy":0,"sell":0,"cat":"Exotic Veg","hist":[]},{"name":"Apple (Red Imported)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Apple (Local)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Apple (Green)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Blueberry (Fresh)","unit":"PACK","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Chikoo / Sapota","unit":"PC","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Custard Apple","unit":"PC","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Dragon Fruit","unit":"PC","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Fig / Anjeer","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Grapes (Black)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Grapes (White)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Guava (Imported)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Kiwi","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Mango","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Mosambi / Sweet Lime","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Mulberries","unit":"PACK","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Musk Melon","unit":"PC","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Orange (Imported)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Orange (Local)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Papaya","unit":"PC","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Pears (Imported)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Plums (Imported)","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Pomegranate / Anar","unit":"KG","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Strawberry","unit":"PACK","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Tender Coconut","unit":"PC","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Watermelon","unit":"PC","buy":0,"sell":0,"cat":"Fresh Fruits","hist":[]},{"name":"Avocado Pulp (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Apricot (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Blackberry (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Blueberry (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Cranberry (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Jamun (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Kiwi (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Lychee (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Mango Slices (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Mulberry (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Peach (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Pineapple Tidbits (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Raspberries (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Sitaphal / Custard Apple (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Strawberry (Imported, Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]},{"name":"Sweet Corn (Frozen)","unit":"PACK","buy":0,"sell":0,"cat":"Frozen & Premium","hist":[]}]
@@ -34,10 +38,13 @@ async function boot() {
 async function loadAll(){
   S.loading=true; render()
   try{
-    const [st,items,clients,bills]=await Promise.all([loadSettings(),loadItems(),loadClients(),loadBills()])
+    const [st,items,clients,bills,orders,customers]=await Promise.all([
+      loadSettings(),loadItems(),loadClients(),loadBills(),
+      loadOrders().catch(()=>[]),loadCustomers().catch(()=>[])
+    ])
     if(st){S.settings={biz:st.biz,addr:st.addr,phone:st.phone,gstin:st.gstin,terms:st.terms,prefix:st.prefix};S.nextNo=st.next_no||1}
     S.items=items.length?items:SEED_ITEMS.map(i=>({...i,id:i.id||uuid4(),hist:i.hist||[]}))
-    S.clients=clients; S.bills=bills
+    S.clients=clients; S.bills=bills; S.orders=orders; S.customers=customers
   }catch(e){console.error(e);toast('Load error: '+e.message)}
   S.draft=blankDraft(S.settings,S.nextNo); S.loading=false
 }
@@ -187,14 +194,15 @@ function loginView(){return`<div class="login-wrap"><div class="login-box">
 </div></div>`}
 
 function appView(){
-  const tabs=['bill','items','clients','history','setup']
+  const tabs=['bill','items','clients','orders','customers','history','setup']
+  const label={bill:'Bill',items:'Items',clients:'Clients',orders:'Orders',customers:'Customers',history:'History',setup:'Setup'}
   return`<div class="wrap">
   <header class="bar">
     <div class="mark">${esc(S.settings.biz||'Cropline')}<small>B2B produce supply</small></div>
     <span id="saveStatus" class="ss"></span>
-    <nav class="tabs">${tabs.map(tb=>`<button class="${S.tab===tb?'on':''}" onclick="go('${tb}')">${tb.charAt(0).toUpperCase()+tb.slice(1)}</button>`).join('')}</nav>
+    <nav class="tabs">${tabs.map(tb=>`<button class="${S.tab===tb?'on':''}" onclick="go('${tb}')">${label[tb]}</button>`).join('')}</nav>
   </header>
-  <div id="view">${{bill:billView,items:()=>itemsView(),clients:()=>clientsView(),history:()=>histView(),setup:()=>setupView()}[S.tab]()}</div>
+  <div id="view">${{bill:billView,items:()=>itemsView(),clients:()=>clientsView(),orders:()=>ordersView(),customers:()=>customersView(),history:()=>histView(),setup:()=>setupView()}[S.tab]()}</div>
   </div><div id="modal"></div><div id="print"></div>`
 }
 
@@ -415,6 +423,69 @@ window._printBill = i => {
 window._delBill = i => {
   if(!confirm('Delete bill '+S.bills[i].no+'?'))return; S.bills.splice(i,1); render()
 }
+/* ── orders tab ── */
+window._setOStatus = v => { setOStatus(v); render() }
+window._setOQ = v => { setOQ(v); render() }
+window._setOrderStatus = async (id,status) => {
+  const o=S.orders.find(x=>x.id===id); if(!o)return
+  const prev=o.status; o.status=status; render()
+  try{ await updateOrderStatus(id,status) }
+  catch(e){ o.status=prev; render(); toast('Could not update: '+e.message) }
+}
+
+/* ── customers tab ── */
+window._setCustQ = v => { setCustQ(v); render() }
+window._setCsmForm = v => { setCsmForm(v); render() }
+window._createCsmCustomer = async () => {
+  const email=document.getElementById('csmEmail').value.trim()
+  const password=document.getElementById('csmPw').value
+  const fullName=document.getElementById('csmName').value.trim()
+  const phone=document.getElementById('csmPhone').value.trim()
+  const businessName=document.getElementById('csmBiz').value.trim()
+  const clientId=document.getElementById('csmClient').value
+  if(!email||!password||!fullName)return toast('Name, email and password are required')
+  try{
+    const res=await createCsmCustomer({email,password,fullName,phone,businessName,clientId})
+    S.customers=await loadCustomers(); setCsmForm(false); render()
+    toast('Login created — share with the client: '+email+' / '+res.password)
+  }catch(e){ toast('Could not create login: '+e.message) }
+}
+window._openCustomer = async id => {
+  setCustOpen(id); setCustAddrs([]); render()
+  const addrs=await loadCustomerAddresses(id); setCustAddrs(addrs); render()
+}
+window._closeCustomer = () => { setCustOpen(null); render() }
+window._setCustActive = async (id,active) => {
+  await setCustomerActive(id,active); const c=S.customers.find(x=>x.id===id); if(c)c.active=active; render()
+}
+window._linkCustomer = async (id,clientId) => {
+  await linkCustomerToClient(id,clientId); const c=S.customers.find(x=>x.id===id); if(c)c.client_id=clientId||null; render()
+}
+window._newCustAddrForm = () => {
+  document.getElementById('custAddrForm').innerHTML=`<div class="panel" style="background:#fff;margin-top:10px">
+    <label class="f"><span>Label</span><input class="inp" id="naLabel2" placeholder="Restaurant, Kitchen…"></label>
+    <label class="f"><span>Area</span><select class="inp" id="naArea2"><option>Kukatpally</option><option>Madhapur</option><option>Gachibowli</option><option>Custom</option></select></label>
+    <label class="f"><span>Address line 1</span><input class="inp" id="naLine12"></label>
+    <label class="f"><span>Address line 2</span><input class="inp" id="naLine22"></label>
+    <label class="f"><span>Pincode</span><input class="inp" id="naPin2"></label>
+    <label class="f"><span>Phone</span><input class="inp" id="naPhone2"></label>
+    <button class="btn pri" onclick="window._saveCustAddr()">Save address</button>
+  </div>`
+}
+window._saveCustAddr = async () => {
+  const a={label:document.getElementById('naLabel2').value||'Address',area:document.getElementById('naArea2').value,
+    line1:document.getElementById('naLine12').value,line2:document.getElementById('naLine22').value,
+    pincode:document.getElementById('naPin2').value,phone:document.getElementById('naPhone2').value,
+    isDefault:custAddrs.length===0}
+  if(!a.line1||!a.phone)return toast('Address line 1 and phone are required')
+  const saved=await adminSaveAddress(custOpen,a)
+  setCustAddrs([...custAddrs,saved]); document.getElementById('custAddrForm').innerHTML=''; render()
+}
+window._deleteCustAddr = async id => {
+  if(!confirm('Delete this address?'))return
+  await adminDeleteAddress(id); setCustAddrs(custAddrs.filter(a=>a.id!==id)); render()
+}
+
 window._setSetting = (k,v) => { S.settings[k]=v; queue('settings') }
 window._setNextNo  = v => { S.nextNo=v; queue('settings') }
 window._exportCSV  = () => {

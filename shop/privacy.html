@@ -1,0 +1,65 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy Policy — Cropline</title>
+<link rel="stylesheet" href="/src/shop/shop.css">
+<body>
+<header class="shop-bar" id="shopHeader"></header>
+<div class="wrap narrow legal">
+  <h1>Privacy Policy</h1>
+  <p class="upd">Last updated: <span id="d"></span></p>
+
+  <p>This Privacy Policy explains how Cropline ("we", "us") collects, uses, and protects your personal information when you use our website and ordering platform ("Platform").</p>
+
+  <h2>1. Information We Collect</h2>
+  <ul>
+    <li>Account details you provide: name, business name, phone number, email address, and password.</li>
+    <li>Delivery addresses you save to your address book.</li>
+    <li>Order details: items ordered, quantities, prices, order history, and any notes you add.</li>
+    <li>Payment confirmation data from our payment gateway (we do not receive or store your full card, UPI, or bank account details — these are handled directly by the gateway).</li>
+    <li>Communications you send us, including WhatsApp order messages, which we may use to create or update an order on your behalf.</li>
+    <li>Basic technical data such as browser type and pages visited, used to keep the Platform working correctly and securely.</li>
+  </ul>
+
+  <h2>2. How We Use Your Information</h2>
+  <ul>
+    <li>To create and manage your account, and to fulfil, deliver, and invoice your orders.</li>
+    <li>To send you order status updates by email and/or WhatsApp (order confirmation, packed, out for delivery, delivered, or cancelled).</li>
+    <li>To provide customer support and respond to your queries.</li>
+    <li>To maintain accurate business records, including for tax and accounting purposes.</li>
+    <li>To improve the Platform and our catalog/pricing based on aggregate ordering trends.</li>
+  </ul>
+
+  <h2>3. Sharing of Information</h2>
+  <p>We do not sell your personal information. We share information only with:</p>
+  <ul>
+    <li>Our payment gateway provider, to process online payments.</li>
+    <li>Our email and WhatsApp messaging providers, solely to deliver order-status notifications to you.</li>
+    <li>Our delivery personnel, limited to what is needed to complete your delivery (name, address, phone, order contents).</li>
+    <li>Law enforcement or regulators, where required by law.</li>
+  </ul>
+
+  <h2>4. Data Retention</h2>
+  <p>We retain account and order information for as long as your account is active and thereafter as needed to meet accounting, tax, and legal obligations.</p>
+
+  <h2>5. Your Rights</h2>
+  <p>You may review and update your account details and address book at any time from "My Account". You may request deletion of your account by contacting us; we may retain order records where required by law (e.g., for tax purposes) even after account deletion.</p>
+
+  <h2>6. Security</h2>
+  <p>We use industry-standard measures, including encrypted connections (HTTPS) and access controls on our database, to protect your information. No method of transmission or storage is 100% secure, but we work to protect your data using suitable safeguards.</p>
+
+  <h2>7. Cookies &amp; Local Storage</h2>
+  <p>We use your browser's local storage to remember items in your shopping cart before checkout. This data stays on your device and is not shared with third parties.</p>
+
+  <h2>8. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time; the "Last updated" date above will reflect the latest revision.</p>
+
+  <h2>9. Contact</h2>
+  <p>For privacy questions or requests, please contact us via the details listed in your account or on your order confirmations.</p>
+</div>
+<footer class="shop-foot" id="shopFooter"></footer>
+<script type="module">
+  import { renderShell } from '/src/shop/util.js'
+  renderShell('')
+  document.getElementById('d').textContent = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})
+</script>

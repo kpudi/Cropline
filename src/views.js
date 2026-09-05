@@ -24,6 +24,16 @@ export function setCQ(v){cQ=v}
 export function setCardSel(v){cardSel=v}
 export function setAsOn(v){asOn=v}
 
+export let oStatus='', oQ=''
+export function setOStatus(v){oStatus=v}
+export function setOQ(v){oQ=v}
+
+export let custQ='', custOpen=null, csmForm=false, custAddrs=[]
+export function setCustQ(v){custQ=v}
+export function setCustOpen(v){custOpen=v}
+export function setCsmForm(v){csmForm=v}
+export function setCustAddrs(v){custAddrs=v}
+
 const iDate = () => iAsOn || today()
 const viewDate = () => asOn || today()
 
@@ -251,6 +261,120 @@ export function histView(){
       <button class="del" onclick="event.stopPropagation();window._delBill(${i})">×</button></td>
   </tr>`).join('')}</tbody></table>
   <p class="hint">Tap any row to load it back into the Bill tab to reprint or edit.</p></div>`
+}
+
+// ─── ORDERS TAB (storefront / WhatsApp / admin-entered) ─────────────────────
+const ORDER_STATUSES=['pending','confirmed','packed','out_for_delivery','delivered','cancelled']
+const STATUS_LABEL={pending:'Order placed',confirmed:'Confirmed',packed:'Packed',out_for_delivery:'Out for delivery',delivered:'Delivered',cancelled:'Cancelled'}
+export function ordersView(){
+  const list=S.orders
+    .filter(o=>!oStatus||o.status===oStatus)
+    .filter(o=>!oQ||(o.order_no+' '+(o.customer?.full_name||'')+' '+(o.contact_phone||'')).toLowerCase().includes(oQ.toLowerCase()))
+  const counts={}; ORDER_STATUSES.forEach(s=>counts[s]=S.orders.filter(o=>o.status===s).length)
+  return `<div class="panel">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+    <h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:0">Orders</h2>
+    <input class="search" placeholder="Search order no. / customer / phone…" value="${esc(oQ)}"
+      style="margin-left:auto" oninput="window._setOQ(this.value)">
+  </div>
+  <div class="periods">
+    <button class="chip ${!oStatus?'on':''}" onclick="window._setOStatus('')">All<i>${S.orders.length}</i></button>
+    ${ORDER_STATUSES.map(s=>`<button class="chip ${oStatus===s?'on':''}" onclick="window._setOStatus('${s}')">${STATUS_LABEL[s]}<i>${counts[s]}</i></button>`).join('')}
+  </div>
+  ${!list.length?`<div class="empty"><b>No orders</b>${S.orders.length?'No orders match this filter.':'Orders placed from the storefront or entered from WhatsApp will show up here.'}</div>`:
+  `<table class="grid"><thead><tr>
+    <th style="width:110px">Order</th><th style="width:110px">Placed</th>
+    <th>Customer</th><th class="r" style="width:60px">Items</th>
+    <th class="r" style="width:100px">Total</th><th style="width:100px">Payment</th>
+    <th style="width:190px">Status</th></tr></thead><tbody>
+  ${list.map(o=>`<tr>
+    <td style="padding-left:10px"><span class="pill">${esc(o.order_no)}</span>${o.source!=='storefront'?`<div style="font-size:11px;color:var(--muted)">${esc(o.source)}</div>`:''}</td>
+    <td style="color:var(--muted);font-size:13px">${dmy(o.placed_at)}</td>
+    <td>${esc(o.customer?.full_name||o.contact_name||'—')}<div style="font-size:12px;color:var(--muted)">${esc(o.contact_phone||'')}</div></td>
+    <td class="r num">${o.lines.length}</td>
+    <td class="r num" style="font-weight:600">${money0(o.total)}</td>
+    <td style="font-size:12.5px">${o.payment_method==='online'?'Online':'COD'}<div style="color:${o.payment_status==='paid'?'var(--leaf)':'var(--muted)'}">${esc(o.payment_status)}</div></td>
+    <td><select class="inp" style="padding:6px 8px" onchange="window._setOrderStatus('${o.id}',this.value)">
+      ${ORDER_STATUSES.map(s=>`<option value="${s}" ${s===o.status?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+    </select></td>
+  </tr>`).join('')}</tbody></table>`}
+  <p class="hint">Changing status here emails and WhatsApps the customer automatically (once those are configured).</p>
+  </div>`
+}
+
+// ─── CUSTOMERS TAB (self sign-up + CSM-managed accounts) ────────────────────
+export function customersView(){
+  if(custOpen) return customerDetail()
+  const list=S.customers.filter(c=>!custQ||(c.full_name+' '+c.phone+' '+c.email).toLowerCase().includes(custQ.toLowerCase()))
+  return `<div class="panel">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+    <h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:0">Customers</h2>
+    <input class="search" placeholder="Search customers…" value="${esc(custQ)}" oninput="window._setCustQ(this.value)">
+    <button class="btn pri" style="margin-left:auto" onclick="window._setCsmForm(true)">+ New CSM login</button>
+  </div>
+  ${csmForm?csmFormHtml():''}
+  ${!list.length?`<div class="empty"><b>No customers yet</b>Self sign-ups from the storefront, and CSM-issued logins you create, both show up here.</div>`:
+  `<table class="grid"><thead><tr>
+    <th>Name</th><th style="width:150px">Phone</th><th style="width:100px">Type</th>
+    <th style="width:160px">Linked client</th><th style="width:34px"></th></tr></thead><tbody>
+  ${list.map(c=>`<tr class="hrow" onclick="window._openCustomer('${c.id}')">
+    <td style="padding-left:10px;font-weight:600">${esc(c.full_name)}<div style="font-weight:400;color:var(--muted);font-size:12.5px">${esc(c.email)}</div></td>
+    <td>${esc(c.phone)}</td>
+    <td><span class="pill" style="background:${c.type==='csm'?'var(--leaf-soft)':'#F2F0E9'}">${c.type==='csm'?'CSM':'Walk-in'}</span></td>
+    <td>${esc(S.clients.find(cl=>cl.id===c.client_id)?.name||'—')}</td>
+    <td>${c.active===false?'<span style="color:var(--red);font-size:12px">inactive</span>':''}</td>
+  </tr>`).join('')}</tbody></table>`}
+  </div>`
+}
+function csmFormHtml(){
+  return `<div class="panel" style="background:#fff;margin-bottom:14px">
+  <h3 style="font-size:14px;font-weight:600;margin-bottom:10px">Create a CSM-managed login</h3>
+  <div class="meta" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+    <label class="f"><span>Full name</span><input class="inp" id="csmName"></label>
+    <label class="f"><span>Business name</span><input class="inp" id="csmBiz"></label>
+    <label class="f"><span>Phone</span><input class="inp" id="csmPhone"></label>
+    <label class="f"><span>Email (login)</span><input class="inp" type="email" id="csmEmail"></label>
+    <label class="f"><span>Temporary password</span><input class="inp" id="csmPw" placeholder="min 6 characters"></label>
+    <label class="f"><span>Link to existing client (optional)</span>
+      <select class="inp" id="csmClient"><option value="">— none —</option>
+        ${S.clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
+      </select></label>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" onclick="window._setCsmForm(false)">Cancel</button>
+    <button class="btn pri" onclick="window._createCsmCustomer()">Create login</button>
+  </div>
+  </div>`
+}
+function customerDetail(){
+  const c=S.customers.find(x=>x.id===custOpen)
+  if(!c){custOpen=null;return customersView()}
+  return `<div class="panel">
+  <button class="btn" onclick="window._closeCustomer()">← All customers</button>
+  <h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:20px;margin:10px 0 4px">${esc(c.full_name)}</h2>
+  <p class="hint" style="margin-bottom:14px">${esc(c.email)} · ${esc(c.phone)} · ${c.type==='csm'?'CSM-managed':'Self sign-up'}</p>
+  <div class="meta" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+    <label class="f"><span>Linked client (contracted rate card)</span>
+      <select class="inp" onchange="window._linkCustomer('${c.id}',this.value)">
+        <option value="">— none / walk-in pricing —</option>
+        ${S.clients.map(cl=>`<option value="${cl.id}" ${cl.id===c.client_id?'selected':''}>${esc(cl.name)}</option>`).join('')}
+      </select></label>
+    <label class="f"><span>Account status</span>
+      <select class="inp" onchange="window._setCustActive('${c.id}',this.value==='1')">
+        <option value="1" ${c.active!==false?'selected':''}>Active</option>
+        <option value="0" ${c.active===false?'selected':''}>Inactive</option>
+      </select></label>
+  </div>
+  <h3 style="font-size:14px;font-weight:600;margin:16px 0 8px">Address book</h3>
+  <div id="custAddrList" style="display:flex;flex-direction:column;gap:8px">${custAddrs.map(a=>`
+    <div class="addr-card-admin" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+      <b>${esc(a.label)}</b> <span style="color:var(--muted);font-size:12px">${esc(a.area)}</span>
+      <div style="font-size:13px;color:var(--muted)">${esc(a.line1)}${a.line2?', '+esc(a.line2):''}, ${esc(a.city)} ${esc(a.pincode)} · ${esc(a.phone)}</div>
+      <button class="del" onclick="window._deleteCustAddr('${a.id}')" style="margin-top:4px">Delete</button>
+    </div>`).join('')||'<p class="hint">No saved addresses yet.</p>'}</div>
+  <button class="btn" style="margin-top:10px" onclick="window._newCustAddrForm()">+ Add address</button>
+  <div id="custAddrForm"></div>
+  </div>`
 }
 
 // ─── SETUP TAB ───────────────────────────────────────────────────────────────

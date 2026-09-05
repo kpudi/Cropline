@@ -89,6 +89,73 @@ export async function upsertCard(clientId, card, itemsByName) {
   if (rows.length) await sb.from('rate_card_items').insert(rows)
 }
 
+/* ---- ecommerce: orders ---- */
+export async function loadOrders(limit = 300) {
+  const [{ data: orders }, { data: lines }, { data: customers }] = await Promise.all([
+    sb.from('orders').select('*').order('placed_at', { ascending: false }).limit(limit),
+    sb.from('order_lines').select('*').order('sort'),
+    sb.from('customers').select('id,full_name,phone,email,type,business_name')
+  ])
+  const byOrder = {}
+  lines?.forEach(l => { (byOrder[l.order_id] = byOrder[l.order_id] || []).push(l) })
+  const custById = {}
+  customers?.forEach(c => custById[c.id] = c)
+  return (orders || []).map(o => ({ ...o, lines: byOrder[o.id] || [], customer: custById[o.customer_id] || null }))
+}
+
+async function authHeader() {
+  const { data: { session } } = await sb.auth.getSession()
+  return { Authorization: 'Bearer ' + session?.access_token, 'Content-Type': 'application/json' }
+}
+export async function updateOrderStatus(orderId, status, note) {
+  const r = await fetch('/api/update-order-status', {
+    method: 'POST', headers: await authHeader(),
+    body: JSON.stringify({ orderId, status, note })
+  })
+  const data = await r.json()
+  if (!r.ok) throw new Error(data.error || 'Could not update order')
+  return data
+}
+
+/* ---- ecommerce: customers / CSM accounts ---- */
+export async function loadCustomers() {
+  const { data } = await sb.from('customers').select('*').order('created_at', { ascending: false })
+  return data || []
+}
+export async function createCsmCustomer({ email, password, fullName, phone, businessName, clientId }) {
+  const r = await fetch('/api/create-customer-account', {
+    method: 'POST', headers: await authHeader(),
+    body: JSON.stringify({ email, password, fullName, phone, businessName, clientId })
+  })
+  const data = await r.json()
+  if (!r.ok) throw new Error(data.error || 'Could not create account')
+  return data
+}
+export async function setCustomerActive(id, active) {
+  await sb.from('customers').update({ active }).eq('id', id)
+}
+export async function linkCustomerToClient(id, clientId) {
+  await sb.from('customers').update({ client_id: clientId || null }).eq('id', id)
+}
+
+/* ---- ecommerce: address book (admin/CSM side) ---- */
+export async function loadCustomerAddresses(customerId) {
+  const { data } = await sb.from('customer_addresses').select('*').eq('customer_id', customerId).order('created_at')
+  return data || []
+}
+export async function adminSaveAddress(customerId, a) {
+  const row = {
+    id: a.id, customer_id: customerId, label: a.label || 'Address', area: a.area || 'Custom',
+    line1: a.line1, line2: a.line2 || '', city: a.city || 'Hyderabad', pincode: a.pincode || '',
+    phone: a.phone || '', is_default: !!a.isDefault, created_by: 'csm'
+  }
+  if (row.is_default) await sb.from('customer_addresses').update({ is_default: false }).eq('customer_id', customerId)
+  const { data, error } = await sb.from('customer_addresses').upsert(row, { onConflict: 'id' }).select('*').single()
+  if (error) throw error
+  return data
+}
+export async function adminDeleteAddress(id) { await sb.from('customer_addresses').delete().eq('id', id) }
+
 /* ---- bills ---- */
 export async function loadBills(limit = 200) {
   const [{ data: bills }, { data: lines }] = await Promise.all([

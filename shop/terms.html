@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terms & Conditions — Cropline</title>
+<link rel="stylesheet" href="/src/shop/shop.css">
+<body>
+<header class="shop-bar" id="shopHeader"></header>
+<div class="wrap narrow legal">
+  <h1>Terms &amp; Conditions</h1>
+  <p class="upd">Last updated: <span id="d"></span></p>
+
+  <p>These Terms &amp; Conditions ("Terms") govern your use of the Cropline website and ordering platform ("Platform"), operated for the supply of fresh produce and related grocery items to businesses and individuals in Hyderabad ("we", "us", "our"). By creating an account, placing an order, or otherwise using the Platform, you ("you", "Customer") agree to be bound by these Terms.</p>
+
+  <h2>1. Accounts</h2>
+  <p>You may create an account yourself, or an account may be created for you by our team ("Account Manager / CSM") if you are a contracted business client. You are responsible for keeping your login credentials confidential and for all activity under your account. Notify us immediately of any unauthorized use.</p>
+
+  <h2>2. Orders</h2>
+  <p>Placing an order through the Platform (including via the shop, or by sending us an order over WhatsApp which we enter on your behalf) is an offer to purchase, which we may accept or decline. Prices shown are those in effect at the time of order and may vary by account for contracted clients with a negotiated rate card. Order quantities for fresh produce may vary slightly (typically within 5%) due to the natural variability of fresh produce weights; we will inform you of any material change before delivery where possible.</p>
+
+  <h2>3. Pricing &amp; Payment</h2>
+  <p>Prices are in Indian Rupees (INR) and, unless stated otherwise, do not include applicable taxes, which will be shown at checkout or on your invoice. Payment may be made online at checkout via our payment gateway, or, where offered to your account, on a cash-on-delivery / periodic invoice basis. Online payments are processed by a third-party payment gateway; we do not store your card or bank details.</p>
+
+  <h2>4. Delivery</h2>
+  <p>We currently deliver within Hyderabad, including Kukatpally, Madhapur, Gachibowli, and other serviceable areas as agreed. Delivery windows are estimates and not guaranteed; we are not liable for delays caused by traffic, weather, or events outside our reasonable control. Please see our <a href="/shop/policies.html">Shipping &amp; Refund Policy</a> for details.</p>
+
+  <h2>5. Cancellations &amp; Refunds</h2>
+  <p>See our <a href="/shop/policies.html">Shipping &amp; Refund Policy</a> for cancellation windows, quality-issue reporting, and refund handling.</p>
+
+  <h2>6. Quality</h2>
+  <p>We take reasonable care to supply fresh, good-quality produce. If any item you receive does not meet reasonable quality expectations, please report it (with a photo, where possible) within the window specified in our Shipping &amp; Refund Policy so we can make it right.</p>
+
+  <h2>7. Prohibited Use</h2>
+  <p>You agree not to misuse the Platform, including attempting to access another customer's account or contracted pricing, submitting fraudulent orders or payment information, or using the Platform for any unlawful purpose.</p>
+
+  <h2>8. Limitation of Liability</h2>
+  <p>To the extent permitted by law, our liability arising from any order is limited to the value of that order. We are not liable for indirect or consequential loss.</p>
+
+  <h2>9. Changes to These Terms</h2>
+  <p>We may update these Terms from time to time. Continued use of the Platform after an update constitutes acceptance of the revised Terms.</p>
+
+  <h2>10. Governing Law</h2>
+  <p>These Terms are governed by the laws of India, and disputes are subject to the exclusive jurisdiction of the courts of Hyderabad, Telangana.</p>
+
+  <h2>11. Contact</h2>
+  <p>Questions about these Terms can be sent to us via the contact details listed in your account or on our order confirmations.</p>
+</div>
+<footer class="shop-foot" id="shopFooter"></footer>
+<script type="module">
+  import { renderShell } from '/src/shop/util.js'
+  renderShell('')
+  document.getElementById('d').textContent = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})
+</script>

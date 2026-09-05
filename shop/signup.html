@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Create your account — Cropline</title>
+<link rel="stylesheet" href="/src/shop/shop.css">
+<body>
+<div class="auth-wrap">
+  <div class="auth-box">
+    <span class="mark">Cropline</span>
+    <h1>Create your account</h1>
+    <form id="signupForm">
+      <label class="f"><span>Full name</span><input class="inp" name="name" required></label>
+      <label class="f"><span>Business name (optional)</span><input class="inp" name="businessName"></label>
+      <label class="f"><span>Phone</span><input class="inp" name="phone" required placeholder="10-digit mobile number"></label>
+      <label class="f"><span>Email</span><input class="inp" type="email" name="email" required></label>
+      <label class="f"><span>Password</span><input class="inp" type="password" name="pw" minlength="6" required></label>
+      <label class="chk">
+        <input type="checkbox" id="tcCheck" required>
+        <span>I have read and agree to the <a href="/shop/terms.html" target="_blank" style="color:var(--leaf);font-weight:600">Terms &amp; Conditions</a>, <a href="/shop/privacy.html" target="_blank" style="color:var(--leaf);font-weight:600">Privacy Policy</a> and <a href="/shop/policies.html" target="_blank" style="color:var(--leaf);font-weight:600">Shipping &amp; Refund Policy</a>.</span>
+      </label>
+      <button class="btn pri block" type="submit">Create account</button>
+      <div class="err" id="err" hidden></div>
+    </form>
+    <div class="auth-switch">Already have an account? <a href="/shop/login.html">Log in</a></div>
+    <div class="auth-switch">Ordering through a Cropline account manager? Ask them for your login instead of signing up here.</div>
+  </div>
+</div>
+<script type="module" src="/src/shop/signup-page.js"></script>

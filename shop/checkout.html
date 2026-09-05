@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout — Cropline</title>
+<link rel="stylesheet" href="/src/shop/shop.css">
+<!-- Online payment is disabled for now (no provider chosen yet) — see
+     PAYMENTS_ENABLED in src/shop/checkout-page.js. Re-add this script tag
+     when Razorpay (or whichever provider you pick) goes live. -->
+<!-- <script src="https://checkout.razorpay.com/v1/checkout.js"></script> -->
+<body>
+<header class="shop-bar" id="shopHeader"></header>
+<div class="wrap narrow">
+  <h1 style="font-family:'Fraunces',serif;font-size:22px;margin:18px 0 12px">Checkout</h1>
+
+  <div class="panel">
+    <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">Delivery address</h2>
+    <div id="addrList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button class="btn" id="newAddrBtn" style="margin-top:10px">+ Add new address</button>
+  </div>
+
+  <div class="panel" id="newAddrPanel" hidden>
+    <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">New address</h2>
+    <label class="f"><span>Label</span><input class="inp" id="naLabel" placeholder="Home, Restaurant, Kitchen…"></label>
+    <label class="f"><span>Area</span>
+      <select class="inp" id="naArea"><option>Kukatpally</option><option>Madhapur</option><option>Gachibowli</option><option>Custom</option></select>
+    </label>
+    <label class="f"><span>Address line 1</span><input class="inp" id="naLine1" required></label>
+    <label class="f"><span>Address line 2 / landmark</span><input class="inp" id="naLine2"></label>
+    <label class="f"><span>Pincode</span><input class="inp" id="naPin"></label>
+    <label class="f"><span>Contact phone</span><input class="inp" id="naPhone" required></label>
+    <button class="btn pri block" id="naSave">Save address</button>
+  </div>
+
+  <div class="panel" id="paymentPanel">
+    <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">Payment method</h2>
+    <!-- Online payment option is added here by checkout-page.js once a provider is enabled. -->
+  </div>
+
+  <div class="panel" id="totals"></div>
+  <button class="btn pri block" id="placeBtn">Place order</button>
+  <div class="err" id="err" hidden></div>
+</div>
+<footer class="shop-foot" id="shopFooter"></footer>
+<script type="module" src="/src/shop/checkout-page.js"></script>

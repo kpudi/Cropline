@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Account — Cropline</title>
+<link rel="stylesheet" href="/src/shop/shop.css">
+<body>
+<header class="shop-bar" id="shopHeader"></header>
+<div class="wrap narrow">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 12px">
+    <h1 style="font-family:'Fraunces',serif;font-size:22px">My Account</h1>
+    <button class="btn sm" data-logout>Log out</button>
+  </div>
+  <div class="panel" id="who"></div>
+
+  <div class="tabs" style="display:flex;gap:2px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:16px;width:fit-content">
+    <button class="btn sm" data-tab="orders" id="tabOrders">Orders</button>
+    <button class="btn sm" data-tab="addresses" id="tabAddresses">Addresses</button>
+  </div>
+
+  <div id="ordersPane"><div class="center-msg"><div class="spin"></div>Loading orders…</div></div>
+  <div id="addressesPane" hidden></div>
+</div>
+<footer class="shop-foot" id="shopFooter"></footer>
+<script type="module" src="/src/shop/account-page.js"></script>

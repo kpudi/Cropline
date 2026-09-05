@@ -1,0 +1,16 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Cart — Cropline</title>
+<link rel="stylesheet" href="/src/shop/shop.css">
+<body>
+<header class="shop-bar" id="shopHeader"></header>
+<div class="wrap narrow">
+  <h1 style="font-family:'Fraunces',serif;font-size:22px;margin:18px 0 12px">Your Cart</h1>
+  <div id="empty" class="center-msg" hidden>Your cart is empty.<br><a class="btn pri" href="/shop/index.html" style="margin-top:10px;display:inline-block">Browse the shop</a></div>
+  <div class="panel" id="lines" hidden></div>
+  <div class="panel" id="totals" hidden></div>
+  <button class="btn pri block" id="toCheckout" hidden>Proceed to checkout</button>
+</div>
+<footer class="shop-foot" id="shopFooter"></footer>
+<script type="module" src="/src/shop/cart-page.js"></script>
