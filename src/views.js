@@ -62,6 +62,7 @@ export function itemsView(){
       oninput="window._setIQ(this.value)">
     <button class="btn" onclick="window._newItem()">+ New item</button>
     <button class="btn" onclick="window._carryForward()">Carry forward to ${dmy(d).slice(0,6)}</button>
+    <button class="btn" onclick="window._fillCashRates()" title="Set a cash rate for every item that doesn't have one yet, based on its buying rate">Fill missing cash rates</button>
     <button class="btn" onclick="window._printBuyList()">Print list</button>
     <button class="btn" onclick="window._shareBuyList()">Share on WhatsApp</button>
   </div>

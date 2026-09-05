@@ -9,24 +9,67 @@ export const getSession = () => sb.auth.getSession()
 export const signOut = () => sb.auth.signOut()
 export const signInCustomer = (email, pw) => sb.auth.signInWithPassword({ email, password: pw })
 
+const PENDING_PROFILE_KEY = 'cropline_pending_profile'
+
 export async function signUpCustomer({ email, pw, name, phone, businessName, termsVersion }) {
+  const profile = { name, phone, businessName: businessName || '', termsVersion: termsVersion || 'v1', email }
   const { data, error } = await sb.auth.signUp({ email, password: pw })
   if (error) throw error
-  const uid = data.user?.id
-  if (!uid) throw new Error('Check your email to confirm your account, then log in.')
-  await sb.from('customers').upsert({
-    id: uid, full_name: name, phone, email, business_name: businessName || '',
-    type: 'walkin', created_by: 'self'
+
+  // If Supabase's "Confirm email" setting is on, signUp() succeeds but
+  // returns no session — there's no authenticated user yet, so RLS will
+  // reject any write we try right now. Stash the profile and finish the
+  // job later (see ensureCustomerProfile), once they've confirmed + logged in.
+  if (!data.session) {
+    try { localStorage.setItem(PENDING_PROFILE_KEY, JSON.stringify(profile)) } catch {}
+    return { ...data, needsConfirmation: true }
+  }
+
+  await createCustomerProfile(data.user.id, profile)
+  return { ...data, needsConfirmation: false }
+}
+
+async function createCustomerProfile(uid, profile) {
+  const { error: custErr } = await sb.from('customers').upsert({
+    id: uid, full_name: profile.name || '', phone: profile.phone || '', email: profile.email || '',
+    business_name: profile.businessName || '', type: 'walkin', created_by: 'self'
   }, { onConflict: 'id' })
-  await sb.from('terms_acceptance').insert({ customer_id: uid, version: termsVersion || 'v1' })
-  return data
+  if (custErr) throw custErr
+  const { error: termsErr } = await sb.from('terms_acceptance').insert({
+    customer_id: uid, version: profile.termsVersion || 'v1'
+  })
+  if (termsErr) throw termsErr
+}
+
+// Self-healing: called whenever we have an authenticated session. If this
+// user doesn't have a `customers` row yet (most commonly because they
+// confirmed their email after signing up, so the profile write at signup
+// time was skipped), create it now using whatever we stashed at signup —
+// or a bare-minimum profile from just their auth email as a last resort.
+export async function ensureCustomerProfile() {
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return null
+  const { data: existing } = await sb.from('customers').select('*').eq('id', user.id).maybeSingle()
+  if (existing) return { ...existing, authEmail: user.email }
+
+  let profile = null
+  try { profile = JSON.parse(localStorage.getItem(PENDING_PROFILE_KEY) || 'null') } catch {}
+  if (!profile) profile = { name: '', phone: '', businessName: '', termsVersion: 'v1', email: user.email || '' }
+
+  await createCustomerProfile(user.id, profile)
+  try { localStorage.removeItem(PENDING_PROFILE_KEY) } catch {}
+
+  const { data } = await sb.from('customers').select('*').eq('id', user.id).maybeSingle()
+  return data ? { ...data, authEmail: user.email } : null
 }
 
 export async function myCustomerRow() {
   const { data: { user } } = await sb.auth.getUser()
   if (!user) return null
   const { data } = await sb.from('customers').select('*').eq('id', user.id).maybeSingle()
-  return data ? { ...data, authEmail: user.email } : null
+  if (data) return { ...data, authEmail: user.email }
+  // No profile row yet — self-heal instead of leaving them stuck.
+  return ensureCustomerProfile()
 }
 
 /* ---- catalog ---- */

@@ -15,6 +15,54 @@ the two Razorpay env vars whenever you're ready to switch it on (works with
 Razorpay as-is; a different provider would need its `/api` functions swapped
 in following the same pattern).
 
+## Round 5: fixed the checkout redirect bug, explained the ₹0 prices
+
+**Checkout redirecting you back to login, no matter what you tried** — this
+was a real bug I introduced, now fixed. Supabase's "Confirm email" setting
+was on, so when someone signed up, `signUp()` succeeded but didn't hand back
+a logged-in session yet (it's waiting on the confirmation click). The old
+code went ahead and tried to create their `customers` profile row anyway —
+that write silently failed (no session yet = blocked by the security rules),
+so the account existed in Supabase Auth but had no profile. Later, even
+after confirming their email and logging in successfully, `requireCustomer()`
+looked for that profile, found nothing, and bounced them back to the login
+page — forever, since the profile was never going to appear on its own.
+That's almost certainly what looked like "redirecting to the main page."
+
+Fixed in `src/shop/shop-db.js` and `src/shop/shop-auth.js`:
+- Sign-up now correctly detects the "waiting on email confirmation" case and
+  shows *"check your email to confirm, then log in"* instead of pretending
+  it worked.
+- Any page a customer visits while logged in now **self-heals**: if their
+  profile row is missing for any reason, it's created right then, using
+  whatever they typed at sign-up (or a bare-minimum profile if that's not
+  available). Nobody can get permanently stuck again.
+- If profile creation ever does fail (e.g. a real connection problem),
+  you'll now see an actual error message instead of a silent bounce back to
+  login — much easier to diagnose if it ever happens again.
+
+**"All prices are 0"** — this one isn't a bug, it's missing data. The
+storefront's walk-in price for each item comes from **Cash rate**, the
+column in your Items tab you fill in per item (`items.cash_rate` in
+Supabase). Your actual billing has always run off per-client rate cards, so
+Cash rate was never something you had to keep filled in before — the
+storefront is the first thing that reads it, and for most of your ~212
+items it's still blank, hence ₹0.
+
+Two ways to fix it:
+1. **Fastest**: Items tab → new **"Fill missing cash rates"** button. It
+   asks for a margin % (e.g. 25) and sets Cash rate = Buying rate ×
+   (1 + margin%) for every item that has a buying rate but no cash rate yet,
+   in one click. Items with no buying rate on file either are left alone —
+   it tells you how many, so you can fill those in by hand.
+2. Or just type a value into the Cash rate column for the items you
+   actually want on the walk-in storefront (you don't need all 212 priced —
+   only the ones a walk-in customer should be able to buy).
+
+Either way, note this only affects **walk-in** pricing. CSM-managed
+customers always see their own contracted rate-card price regardless of
+what Cash rate says.
+
 ## Round 4: routing fix, done properly this time
 
 The `vercel.json` rewrite approach depended on that file landing exactly at
@@ -101,7 +149,7 @@ prefix.
 
 | Variable | Where to get it | Required for |
 |---|---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → `service_role` secret | Creating CSM logins |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → `service_role` secret | Creating CSM logins **and** updating order status from the Orders tab — both go through server-side `/api` functions that need this key. Without it, those two actions fail with a "server is missing..." error; everything else (storefront browsing, checkout, self sign-up) works fine without it. |
 | `RESEND_API_KEY`, `RESEND_FROM` | resend.com (free tier: 100 emails/day) — verify a sending domain or use their sandbox `onboarding@resend.dev` while testing | Order-status emails |
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | developers.facebook.com → create a Meta App → add "WhatsApp" product → get a test number + permanent token | Order-status WhatsApp messages |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Not needed yet — payments are switched off. Add these later, once you've picked a provider. | Online checkout (currently disabled) |

@@ -324,6 +324,33 @@ window._carryForward = () => {
   })
   render(); toast(n?n+' rates carried forward':'All items already have a rate for that day')
 }
+window._fillCashRates = () => {
+  // Walk-in customers on the storefront see `items.cash_rate` (the "sell"
+  // column here). If it's never been set for an item, they see a ₹0 price.
+  // This is a real data gap, not a bug — your billing has always run off
+  // per-client rate cards, so "sell" was never mandatory before. This tool
+  // fills the gap in bulk: cash rate = buying rate × (1 + margin%).
+  const missing = S.items.filter(it => !(+it.sell > 0))
+  if (!missing.length) { toast('Every item already has a cash rate.'); return }
+  const withBuy = missing.filter(it => +it.buy > 0)
+  const pctStr = prompt(
+    `${missing.length} items have no cash rate (₹0 on the storefront).\n` +
+    `${withBuy.length} of them have a buying rate to work from.\n\n` +
+    `Set their cash rate to (buying rate × (1 + margin%))? Enter a margin %, e.g. 25`, '25')
+  if (pctStr === null) return
+  const pct = +pctStr
+  if (!isFinite(pct)) { toast('Enter a plain number, e.g. 25 for 25%'); return }
+  let n = 0
+  withBuy.forEach(it => {
+    const idx = S.items.indexOf(it)
+    const rate = Math.round(+it.buy * (1 + pct / 100) * 100) / 100
+    window._setCashRate(idx, rate)
+    n++
+  })
+  render()
+  const stillZero = missing.length - n
+  toast(`Set cash rate for ${n} item${n === 1 ? '' : 's'}.` + (stillZero ? ` ${stillZero} item${stillZero === 1 ? '' : 's'} still have no buying rate to base it on — set those manually.` : ''))
+}
 window._showHist = i => {
   const it=S.items[i], h=(it.hist||[]).slice().sort((a,b)=>b.d.localeCompare(a.d))
   document.getElementById('modal').innerHTML=`<div class="scrim" onmousedown="if(event.target===this)closePaste()">
