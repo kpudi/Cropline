@@ -78,6 +78,9 @@ document.getElementById('search').addEventListener('input', e => { query = e.tar
 const scrim = document.getElementById('pasteScrim')
 document.getElementById('pasteBtn').addEventListener('click', () => { scrim.hidden = false; document.getElementById('pasteResult').innerHTML = '' })
 document.getElementById('pasteCancel').addEventListener('click', () => scrim.hidden = true)
+document.getElementById('pasteClose').addEventListener('click', () => scrim.hidden = true)
+scrim.addEventListener('mousedown', e => { if (e.target === scrim) scrim.hidden = true })
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !scrim.hidden) scrim.hidden = true })
 document.getElementById('pasteParse').addEventListener('click', () => {
   const text = document.getElementById('pasteText').value
   const parseItems = catalog.map(i => ({ name: i.name, unit: i.unit, sell: i.effRate, buy: 0 }))

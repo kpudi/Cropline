@@ -18,8 +18,9 @@
 <footer class="shop-foot" id="shopFooter"></footer>
 
 <!-- paste-order modal -->
-<div class="scrim" id="pasteScrim" hidden style="position:fixed;inset:0;background:rgba(22,33,28,.42);display:flex;align-items:center;justify-content:center;padding:16px;z-index:70">
-  <div class="panel" style="max-width:560px;width:100%;max-height:85vh;overflow:auto">
+<div class="scrim" id="pasteScrim" hidden>
+  <div class="panel" style="max-width:560px;width:100%;max-height:85vh;overflow:auto;position:relative">
+    <button id="pasteClose" aria-label="Close" style="position:absolute;top:12px;right:12px;font-size:20px;line-height:1;color:var(--muted);padding:4px 8px">×</button>
     <h2 style="font-family:'Fraunces',serif;font-size:18px;margin-bottom:10px">Paste your WhatsApp order</h2>
     <p class="hint" style="margin-bottom:10px">Paste the order list exactly as you'd send it on WhatsApp — misspellings and Hindi names are fine.</p>
     <textarea class="inp" id="pasteText" rows="8" placeholder="e.g.&#10;2kg onion&#10;1 kg tamatar&#10;500gm dhania"></textarea>

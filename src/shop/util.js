@@ -32,9 +32,9 @@ export function renderShell(active, { showFooter = true } = {}) {
   if (header) {
     header.innerHTML = `
       <div class="inner">
-        <a href="/shop/index.html" class="mark">Cropline<small>Fresh, direct to your kitchen</small></a>
+        <a href="/" class="mark">Cropline<small>Fresh, direct to your kitchen</small></a>
         <nav class="shopnav">
-          <a href="/shop/index.html" data-nav="shop">Shop</a>
+          <a href="/" data-nav="shop">Shop</a>
           <a href="/shop/account.html" data-nav="orders">My Orders</a>
           <a href="/shop/account.html#addresses" data-nav="addresses">Addresses</a>
           <a href="/shop/cart.html" class="cart-btn" data-nav="cart">Cart <span class="badge" data-cart-count hidden>0</span></a>

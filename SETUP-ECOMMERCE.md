@@ -87,6 +87,15 @@ your own testing, but to message real customers you'll need to add and
 verify your own WhatsApp Business phone number in the same Meta app
 (a short verification flow in Meta's UI, no code changes needed here).
 
+## 3a. Routing: the shop is now your homepage
+
+`vercel.json` (new file) makes `https://cropline-ruddy.vercel.app/` serve
+the storefront, and moves the admin panel to
+`https://cropline-ruddy.vercel.app/admin`. This is a routing rule only — no
+files moved — so `/shop/index.html` etc. still work too, they're just not
+what customers need to type anymore. Update any bookmark you use for the
+admin panel to `/admin`.
+
 ## 4. What's in this add-on
 
 - `supabase-schema-ecommerce.sql` — customers, customer_addresses, orders,

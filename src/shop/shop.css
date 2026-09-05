@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&display=swap');
 :root{--paper:#FCFBF8;--ink:#16211C;--leaf:#1F4D3A;--leaf-soft:#EAF1EC;--marigold:#E0A33B;--muted:#6E7A73;--line:#E4E1D8;--red:#A63A2B;--shell:#F2F0E9}
 *{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 body{background:var(--shell);color:var(--ink);font-family:'Inter Tight',-apple-system,sans-serif;font-size:15px;line-height:1.45;min-height:100vh}
 button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 a{color:inherit;text-decoration:none}
@@ -108,6 +109,8 @@ label.f span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px
 /* toast */
 .shop-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:22px;font-size:14px;font-weight:500;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:.2s}
 .shop-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.scrim{position:fixed;inset:0;background:rgba(22,33,28,.42);display:flex;align-items:center;justify-content:center;padding:16px;z-index:70}
 
 footer.shop-foot{border-top:1px solid var(--line);padding:20px 14px;margin-top:30px;text-align:center;color:var(--muted);font-size:12.5px}
 footer.shop-foot a{color:var(--leaf);font-weight:500;margin:0 6px}
