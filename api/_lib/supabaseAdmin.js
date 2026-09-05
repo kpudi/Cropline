@@ -25,4 +25,17 @@ async function requireAdmin(req) {
   return user.id
 }
 
-module.exports = { supabaseAdmin, requireAdmin }
+// Verify the bearer token belongs to any signed-in customer (no admin
+// check) — used by endpoints a regular shopper is allowed to call, where we
+// still need the service-role key server-side (e.g. to send an email).
+async function requireUser(req) {
+  const auth = req.headers.authorization || ''
+  const token = auth.replace(/^Bearer\s+/i, '')
+  if (!token) throw new Error('Not authenticated')
+  const sbAdmin = supabaseAdmin()
+  const { data: { user }, error } = await sbAdmin.auth.getUser(token)
+  if (error || !user) throw new Error('Not authenticated')
+  return user
+}
+
+module.exports = { supabaseAdmin, requireAdmin, requireUser }

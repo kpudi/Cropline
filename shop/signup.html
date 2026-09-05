@@ -5,24 +5,49 @@
 <link rel="stylesheet" href="/src/shop/shop.css">
 <body>
 <div class="auth-wrap">
-  <div class="auth-box">
-    <span class="mark">Cropline</span>
-    <h1>Create your account</h1>
-    <form id="signupForm">
-      <label class="f"><span>Full name</span><input class="inp" name="name" required></label>
-      <label class="f"><span>Business name (optional)</span><input class="inp" name="businessName"></label>
-      <label class="f"><span>Phone</span><input class="inp" name="phone" required placeholder="10-digit mobile number"></label>
-      <label class="f"><span>Email</span><input class="inp" type="email" name="email" required></label>
-      <label class="f"><span>Password</span><input class="inp" type="password" name="pw" minlength="6" required></label>
-      <label class="chk">
-        <input type="checkbox" id="tcCheck" required>
-        <span>I have read and agree to the <a href="/shop/terms.html" target="_blank" style="color:var(--leaf);font-weight:600">Terms &amp; Conditions</a>, <a href="/shop/privacy.html" target="_blank" style="color:var(--leaf);font-weight:600">Privacy Policy</a> and <a href="/shop/policies.html" target="_blank" style="color:var(--leaf);font-weight:600">Shipping &amp; Refund Policy</a>.</span>
-      </label>
-      <button class="btn pri block" type="submit">Create account</button>
-      <div class="err" id="err" hidden></div>
-    </form>
-    <div class="auth-switch">Already have an account? <a href="/shop/login.html">Log in</a></div>
-    <div class="auth-switch">Ordering through a Cropline account manager? Ask them for your login instead of signing up here.</div>
+  <div class="auth-grid">
+    <div class="auth-benefits">
+      <span class="mark">Cropline</span>
+      <h2>One account, fresh produce delivered</h2>
+      <ul class="benefit-list">
+        <li><b>Track every order</b><span>From placed to delivered, with updates by email.</span></li>
+        <li><b>Save your addresses</b><span>Check out faster next time — no retyping.</span></li>
+        <li><b>Reorder in seconds</b><span>Your order history is always one tap away.</span></li>
+      </ul>
+    </div>
+    <div class="auth-box">
+      <span class="mark auth-box-mark">Cropline</span>
+      <h1>Create your account</h1>
+      <form id="signupForm">
+        <label class="f"><span>Full name</span><input class="inp" name="name" required></label>
+        <label class="f"><span>Business name (optional)</span><input class="inp" name="businessName"></label>
+        <label class="f"><span>Phone</span><input class="inp" name="phone" required placeholder="10-digit mobile number"></label>
+        <label class="f"><span>Email</span><input class="inp" type="email" name="email" required></label>
+        <label class="f"><span>Password</span><input class="inp" type="password" name="pw" minlength="6" required></label>
+        <label class="chk">
+          <input type="checkbox" id="tcCheck" required>
+          <span>I have read and agree to the <a href="/shop/terms.html" target="_blank" style="color:var(--leaf);font-weight:600">Terms &amp; Conditions</a>, <a href="/shop/privacy.html" target="_blank" style="color:var(--leaf);font-weight:600">Privacy Policy</a> and <a href="/shop/policies.html" target="_blank" style="color:var(--leaf);font-weight:600">Shipping &amp; Refund Policy</a>.</span>
+        </label>
+        <button class="btn pri block" type="submit">Create account</button>
+        <div class="err" id="err" hidden></div>
+      </form>
+      <div class="auth-switch">Already have an account? <a href="/shop/login.html">Log in</a></div>
+      <div class="auth-switch">Ordering through a Cropline account manager? Ask them for your login instead of signing up here.</div>
+    </div>
+
+    <div class="auth-box confirm-panel" id="confirmPanel" hidden>
+      <div class="confirm-icon">✓</div>
+      <h1>Check your email</h1>
+      <p class="confirm-lead">We've sent a confirmation link to <b id="confirmEmail"></b>.</p>
+      <ol class="steps-list">
+        <li>Open the email from Cropline (check spam/promotions if it's not in your inbox).</li>
+        <li>Click <b>Confirm my email</b> in that message.</li>
+        <li>Come back and log in — your account will be ready.</li>
+      </ol>
+      <button class="btn block" id="resendBtn" type="button">Resend confirmation email</button>
+      <div class="err" id="resendMsg" hidden></div>
+      <div class="auth-switch">Already confirmed? <a href="/shop/login.html">Log in</a></div>
+    </div>
   </div>
 </div>
 <script type="module" src="/src/shop/signup-page.js"></script>

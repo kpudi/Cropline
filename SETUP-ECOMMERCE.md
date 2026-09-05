@@ -1,5 +1,68 @@
 # Cropline Ecommerce Add-on — Setup Guide
 
+## Round 6: real email verification + order emails, and a proper signup flow
+
+**Email confirmation was already real** — Supabase itself sends the
+verification email and checks the click, nothing here fakes it. What was
+missing is what makes it feel real to a customer, so this round adds:
+
+- **A working "resend confirmation email" button**, on both the signup
+  "check your email" screen and on the login page if someone tries to log in
+  before confirming. No more being stuck if the email lands in spam or the
+  link expires.
+- **An actual order-confirmation email**, sent the moment an order is
+  placed (previously, the customer only got emailed on the admin's *next*
+  status change — nothing at all when they first checked out). It's an
+  itemized receipt: line items, subtotal, discount, total, delivery address,
+  with a "Track your order" button.
+- **Branded HTML emails** for both the new order-confirmation email and the
+  existing status-update emails (confirmed / packed / out for delivery /
+  delivered / cancelled) — a simple green Cropline header instead of plain
+  text, matching the storefront's look. Falls back to plain text
+  automatically for any inbox that doesn't render HTML.
+- **A properly redesigned signup page** — two-column layout (like a real
+  storefront's "Create account" page) explaining what having an account
+  gets you, and a real step-by-step "check your email" screen after
+  submitting instead of just a one-line message under the button.
+
+None of this needed new environment variables — it reuses `RESEND_API_KEY`
+you already have (or will add, see the table below).
+
+### Two Supabase Auth settings you should check, so verification links actually work
+
+These aren't things I can set from code — they're one-time settings in your
+Supabase dashboard under **Authentication → URL Configuration**:
+
+1. **Site URL** should be `https://cropline-ruddy.vercel.app` — this is
+   what Supabase uses to build the confirmation link it emails out. If it's
+   still the default `localhost:3000`, every confirmation link sends
+   customers to a page that doesn't exist.
+2. **Redirect URLs** should include `https://cropline-ruddy.vercel.app/**`
+   (the `**` allows any path). Without this, Supabase blocks the redirect
+   after someone clicks confirm, even if Site URL is correct.
+
+Also under **Authentication → Providers → Email**, make sure **"Confirm
+email"** is switched on — that's what makes signup require clicking the
+emailed link at all, rather than logging you in immediately.
+
+Optionally, under **Authentication → Email Templates → Confirm signup**,
+you can replace Supabase's default template text/logo with Cropline
+branding — that's the one email in this whole flow that still uses
+Supabase's own template rather than one of ours, since account verification
+has to happen before anything of ours is allowed to run.
+
+### One Resend limitation worth knowing
+
+On Resend's free/sandbox `from` address (`onboarding@resend.dev`), emails
+only deliver to **your own verified Resend account email** — not to real
+customers. To actually email customers, verify your own sending domain in
+Resend (Resend dashboard → Domains — add a couple of DNS records at your
+domain registrar) and set `RESEND_FROM` to something like
+`Cropline <orders@yourdomain.com>`. Until then, order/status emails will
+silently no-op for anyone who isn't you, exactly like before this round —
+nothing is broken, there's just a real domain to verify when you're ready to
+go live with email.
+
 This adds a customer-facing storefront (catalog, cart, "paste WhatsApp order",
 checkout, address book, order tracking), self sign-up + CSM-issued logins
 with Terms & Conditions acceptance, and an Orders + Customers tab in your

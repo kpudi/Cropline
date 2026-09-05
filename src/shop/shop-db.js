@@ -9,6 +9,10 @@ export const getSession = () => sb.auth.getSession()
 export const signOut = () => sb.auth.signOut()
 export const signInCustomer = (email, pw) => sb.auth.signInWithPassword({ email, password: pw })
 
+// Re-send the "confirm your email" link — for someone who signed up but
+// didn't get it, or let the original link expire.
+export const resendConfirmation = (email) => sb.auth.resend({ type: 'signup', email })
+
 const PENDING_PROFILE_KEY = 'cropline_pending_profile'
 
 export async function signUpCustomer({ email, pw, name, phone, businessName, termsVersion }) {
@@ -148,7 +152,23 @@ export async function placeOrder({ customerId, clientId, addressId, contactName,
     qty: +l.qty, rate: +l.rate, amount: +l.qty * +l.rate, sort: k
   })))
   await sb.from('order_status_events').insert({ order_id: order.id, status: 'pending', note: 'Order placed' }).catch(() => {})
+  notifyOrderPlacedBestEffort(order.id)
   return order
+}
+
+// Fire-and-forget confirmation email — a customer's order is placed either
+// way, so a slow or failing notification should never block checkout. The
+// server endpoint re-checks that this order really belongs to the caller.
+async function notifyOrderPlacedBestEffort(orderId) {
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) return
+    await fetch('/api/notify-order-placed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ orderId })
+    })
+  } catch {}
 }
 
 export async function markOrderPaid(orderId, razorpayOrderId, razorpayPaymentId) {
