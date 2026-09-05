@@ -246,6 +246,36 @@ drop policy if exists "settings public read" on settings;
 create policy "settings public read" on settings for select using (true);
 
 -- ---------------------------------------------------------------------
+-- 9. OFFERS / PROMO CODES
+-- ---------------------------------------------------------------------
+create table if not exists offers (
+  id uuid primary key default gen_random_uuid(),
+  code text unique not null,
+  label text default '',
+  type text not null default 'percent' check (type in ('percent','flat')),
+  value numeric not null default 0,
+  min_order numeric default 0,
+  active boolean default true,
+  valid_from date,
+  valid_to date,
+  created_at timestamptz default now()
+);
+alter table offers enable row level security;
+drop policy if exists "offers public read" on offers;
+create policy "offers public read" on offers for select using (true);
+drop policy if exists "offers admin write" on offers;
+create policy "offers admin write" on offers for all using (is_admin()) with check (is_admin());
+
+alter table orders add column if not exists promo_code text;
+alter table orders add column if not exists discount_amount numeric default 0;
+
+-- ---------------------------------------------------------------------
+-- 10. LET ADMINS EDIT PRODUCT NAME/UNIT/CATEGORY DIRECTLY (already
+-- covered by the existing "items" owner policy for insert/update; this
+-- is just a reminder that no new policy is needed here.)
+-- ---------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------
 -- Done. Next: seed the admins table (see step 1 comment above), then
 -- deploy the app with the new Vercel env vars documented in SETUP.md.
 -- =====================================================================

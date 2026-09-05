@@ -156,6 +156,22 @@ export async function adminSaveAddress(customerId, a) {
 }
 export async function adminDeleteAddress(id) { await sb.from('customer_addresses').delete().eq('id', id) }
 
+/* ---- ecommerce: offers / promo codes ---- */
+export async function loadOffers() {
+  const { data } = await sb.from('offers').select('*').order('created_at', { ascending: false })
+  return data || []
+}
+export async function upsertOffer(o) {
+  const { data, error } = await sb.from('offers').upsert({
+    id: o.id, code: o.code.trim().toUpperCase(), label: o.label || '',
+    type: o.type, value: +o.value || 0, min_order: +o.minOrder || 0,
+    active: o.active !== false, valid_from: o.validFrom || null, valid_to: o.validTo || null
+  }, { onConflict: 'id' }).select('*').single()
+  if (error) throw error
+  return data
+}
+export async function deleteOffer(id) { await sb.from('offers').delete().eq('id', id) }
+
 /* ---- bills ---- */
 export async function loadBills(limit = 200) {
   const [{ data: bills }, { data: lines }] = await Promise.all([

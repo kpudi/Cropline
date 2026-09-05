@@ -34,6 +34,9 @@ export function setCustOpen(v){custOpen=v}
 export function setCsmForm(v){csmForm=v}
 export function setCustAddrs(v){custAddrs=v}
 
+export let offerForm=null // null = closed, 'new' = new offer, or an offer id = editing
+export function setOfferForm(v){offerForm=v}
+
 const iDate = () => iAsOn || today()
 const viewDate = () => asOn || today()
 
@@ -76,18 +79,21 @@ export function itemsView(){
   </div>
   ${stale().length&&d===today()?`<div class="badge amber">${stale().length} items were last priced over a week ago.</div>`:''}
   <div class="tscroll"><table class="grid"><thead><tr>
-    <th style="width:30%">Item</th><th style="width:62px">Unit</th>
-    <th class="r" style="width:104px">Buying rate</th><th class="r" style="width:96px">Change</th>
-    <th style="width:88px">Priced on</th>
-    <th class="r" style="width:98px">Cash rate</th>
+    <th style="width:22%">Item</th><th style="width:120px">Category</th><th style="width:70px">Unit</th>
+    <th class="r" style="width:104px">Buying rate</th><th class="r" style="width:90px">Change</th>
+    <th style="width:82px">Priced on</th>
+    <th class="r" style="width:92px">Cash rate</th>
     <th style="width:66px"></th></tr></thead><tbody>
   ${list.map(({it,i})=>{
     const e=buyOnDate(it,d), p=prevBuyEntry(it,d)
     const b=e?+e.r:0, diff=(p&&b)?b-(+p.r):0, dpc=(p&&+p.r)?Math.round(diff/(+p.r)*100):null
     const onThisDay=e&&e.d===d
     return `<tr>
-      <td style="padding-left:10px">${esc(it.name)}</td>
-      <td style="color:var(--muted)">${esc(it.unit)}</td>
+      <td style="padding-left:10px"><input class="cell" value="${esc(it.name)}" oninput="window._setItemName(${i},this.value)"></td>
+      <td><select class="cell" onchange="window._setItemCat(${i},this.value)">
+        ${CATS.map(c=>`<option ${c===(it.cat||'Other')?'selected':''}>${c}</option>`).join('')}</select></td>
+      <td><select class="cell" onchange="window._setItemUnit(${i},this.value)">
+        ${['KG','GM','PC','PACK','BUNCH','BOX','L','DOZ'].map(u=>`<option ${u===it.unit?'selected':''}>${u}</option>`).join('')}</select></td>
       <td><input class="cell r num" inputmode="decimal" value="${b||''}" placeholder="0"
           title="${onThisDay?'Recorded today':'Carried from '+(e?dmy(e.d):'—')}"
           oninput="window._setBuy(${i},this.value,'${d}')" onblur="window._rerender()"></td>
@@ -374,6 +380,57 @@ function customerDetail(){
     </div>`).join('')||'<p class="hint">No saved addresses yet.</p>'}</div>
   <button class="btn" style="margin-top:10px" onclick="window._newCustAddrForm()">+ Add address</button>
   <div id="custAddrForm"></div>
+  </div>`
+}
+
+// ─── OFFERS TAB (promo codes) ────────────────────────────────────────────────
+export function offersView(){
+  return `<div class="panel">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+    <h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:0">Offers &amp; promo codes</h2>
+    <button class="btn pri" style="margin-left:auto" onclick="window._setOfferForm('new')">+ New offer</button>
+  </div>
+  ${offerForm?offerFormHtml():''}
+  ${!S.offers.length?`<div class="empty"><b>No offers yet</b>Create a promo code customers can enter at checkout.</div>`:
+  `<table class="grid"><thead><tr>
+    <th>Code</th><th>Discount</th><th style="width:110px">Min. order</th>
+    <th style="width:170px">Valid</th><th style="width:80px">Status</th><th style="width:80px"></th></tr></thead><tbody>
+  ${S.offers.map(o=>`<tr>
+    <td style="padding-left:10px;font-weight:700">${esc(o.code)}${o.label?`<div style="font-weight:400;color:var(--muted);font-size:12.5px">${esc(o.label)}</div>`:''}</td>
+    <td>${o.type==='percent'?o.value+'%':money0(o.value)} off</td>
+    <td>${o.min_order?money0(o.min_order):'—'}</td>
+    <td style="font-size:12.5px;color:var(--muted)">${o.valid_from||o.valid_to?`${o.valid_from?dmy(o.valid_from):'—'} to ${o.valid_to?dmy(o.valid_to):'—'}`:'Always'}</td>
+    <td><span class="pill" style="background:${o.active?'var(--leaf-soft)':'#F2F0E9'};color:${o.active?'var(--leaf)':'var(--muted)'}">${o.active?'Active':'Off'}</span></td>
+    <td style="white-space:nowrap">
+      <button class="del" title="Edit" onclick="window._setOfferForm('${o.id}')" style="font-size:13px">✎</button>
+      <button class="del" onclick="window._deleteOffer('${o.id}')">×</button></td>
+  </tr>`).join('')}</tbody></table>`}
+  <p class="hint">Customers enter the code at checkout. Percent discounts apply to the order subtotal.</p>
+  </div>`
+}
+function offerFormHtml(){
+  const editing=offerForm!=='new', o=editing?S.offers.find(x=>x.id===offerForm):null
+  return `<div class="panel" style="background:#fff;margin-bottom:14px">
+  <h3 style="font-size:14px;font-weight:600;margin-bottom:10px">${editing?'Edit offer':'New offer'}</h3>
+  <div class="meta" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+    <label class="f"><span>Code</span><input class="inp" id="ofCode" value="${esc(o?.code||'')}" placeholder="WELCOME10" style="text-transform:uppercase"></label>
+    <label class="f"><span>Label (optional)</span><input class="inp" id="ofLabel" value="${esc(o?.label||'')}" placeholder="New customer offer"></label>
+    <label class="f"><span>Type</span><select class="inp" id="ofType">
+      <option value="percent" ${o?.type!=='flat'?'selected':''}>Percent off</option>
+      <option value="flat" ${o?.type==='flat'?'selected':''}>Flat amount off</option></select></label>
+    <label class="f"><span>Value</span><input class="inp" id="ofValue" type="number" step="any" value="${o?.value||''}" placeholder="10"></label>
+    <label class="f"><span>Minimum order (optional)</span><input class="inp" id="ofMin" type="number" step="any" value="${o?.min_order||''}"></label>
+    <label class="f"><span>Valid from (optional)</span><input class="inp" type="date" id="ofFrom" value="${o?.valid_from||''}"></label>
+    <label class="f"><span>Valid to (optional)</span><input class="inp" type="date" id="ofTo" value="${o?.valid_to||''}"></label>
+    <label class="f"><span>Status</span><select class="inp" id="ofActive">
+      <option value="1" ${o?.active!==false?'selected':''}>Active</option>
+      <option value="0" ${o?.active===false?'selected':''}>Off</option></select></label>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" onclick="window._setOfferForm(null)">Cancel</button>
+    <button class="btn pri" onclick="window._saveOffer('${editing?o.id:''}')">Save offer</button>
+    ${editing?`<button class="btn" style="margin-left:auto;color:var(--red)" onclick="window._deleteOffer('${o.id}')">Delete</button>`:''}
+  </div>
   </div>`
 }
 

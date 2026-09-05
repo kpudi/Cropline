@@ -1,5 +1,5 @@
 import { requireCustomer } from './shop-auth.js'
-import { loadAddresses, saveAddress, placeOrder, loadCatalog, loadPricingForCustomer, sb } from './shop-db.js'
+import { loadAddresses, saveAddress, placeOrder, loadCatalog, loadPricingForCustomer, validateOffer, sb } from './shop-db.js'
 import { getCart, cartTotals, clearCart, repriceCart } from './cart.js'
 import { renderShell, money, esc } from './util.js'
 
@@ -24,7 +24,7 @@ function renderPaymentPanel() {
   }
 }
 
-let customer, addresses = [], selectedAddr = null, cart = []
+let customer, addresses = [], selectedAddr = null, cart = [], offer = null
 
 async function boot() {
   customer = await requireCustomer()
@@ -36,9 +36,33 @@ async function boot() {
   addresses = addrs
   selectedAddr = addresses.find(a => a.is_default) || addresses[0] || null
   renderAddresses()
+  renderItems()
   renderTotals()
 }
 boot()
+
+function renderItems() {
+  document.getElementById('itemsList').innerHTML = cart.map(l => `
+    <div class="tr"><span>${esc(l.name)} <span style="color:var(--muted)">× ${l.qty}${esc(l.unit)}</span></span><span class="num">${money(l.qty * l.rate)}</span></div>
+  `).join('')
+}
+
+document.getElementById('promoApply').addEventListener('click', async () => {
+  const code = document.getElementById('promoInput').value.trim()
+  const msg = document.getElementById('promoMsg')
+  if (!code) { offer = null; msg.textContent = ''; renderTotals(); return }
+  try {
+    const t = cartTotals(cart)
+    offer = await validateOffer(code, t.subtotal)
+    msg.style.color = 'var(--leaf)'
+    msg.textContent = `Applied ${offer.code} — ${money(offer.discount)} off${offer.label ? ' (' + offer.label + ')' : ''}`
+  } catch (e) {
+    offer = null
+    msg.style.color = 'var(--red)'
+    msg.textContent = e.message
+  }
+  renderTotals()
+})
 
 function renderAddresses() {
   const list = document.getElementById('addrList')
@@ -76,10 +100,13 @@ document.getElementById('naSave').addEventListener('click', async () => {
 
 function renderTotals() {
   const t = cartTotals(cart)
+  const discount = offer?.discount || 0
+  const total = Math.max(0, t.total - discount)
   document.getElementById('totals').innerHTML = `
     <div class="tr"><span>Subtotal</span><span class="num">${money(t.subtotal)}</span></div>
+    ${discount ? `<div class="tr"><span>Discount (${esc(offer.code)})</span><span class="num" style="color:var(--leaf)">−${money(discount)}</span></div>` : ''}
     <div class="tr"><span>Delivery</span><span class="num">Free</span></div>
-    <div class="tr grand"><span>Total</span><span class="num">${money(t.total)}</span></div>`
+    <div class="tr grand"><span>Total</span><span class="num">${money(total)}</span></div>`
 }
 
 const err = document.getElementById('err')
@@ -92,11 +119,14 @@ document.getElementById('placeBtn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Placing order…'
   try {
     const t = cartTotals(cart)
+    const discount = offer?.discount || 0
+    const total = Math.max(0, t.total - discount)
     const order = await placeOrder({
       customerId: customer.id, clientId: customer.client_id, addressId: selectedAddr.id,
       contactName: customer.full_name, contactPhone: selectedAddr.phone,
       deliveryArea: selectedAddr.area, deliveryAddress: `${selectedAddr.line1}, ${selectedAddr.line2 || ''}, ${selectedAddr.city} ${selectedAddr.pincode}`,
-      lines: cart, subtotal: t.subtotal, deliveryFee: t.deliveryFee, total: t.total, paymentMethod: pm
+      lines: cart, subtotal: t.subtotal, deliveryFee: t.deliveryFee, total,
+      promoCode: offer?.code || null, discountAmount: discount, paymentMethod: pm
     })
     if (pm === 'cod') {
       clearCart()

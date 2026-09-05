@@ -31,6 +31,7 @@ async function boot() {
     <div class="panel">
       <h2 style="font-size:14px;font-weight:600;margin-bottom:8px">Items</h2>
       ${order.lines.map(l => `<div class="tr"><span>${esc(l.name)} × ${l.qty}${esc(l.unit)}</span><span class="num">${money(l.amount)}</span></div>`).join('')}
+      ${order.discount_amount ? `<div class="tr"><span>Discount${order.promo_code ? ' (' + esc(order.promo_code) + ')' : ''}</span><span class="num" style="color:var(--leaf)">−${money(order.discount_amount)}</span></div>` : ''}
       <div class="tr grand"><span>Total</span><span class="num">${money(order.total)}</span></div>
       <p class="hint" style="margin-top:8px">Payment: ${order.payment_method === 'online' ? 'Online' : 'Pay later / invoiced'} · ${esc(order.payment_status)}</p>
     </div>
@@ -41,7 +42,7 @@ async function boot() {
       <p class="hint" style="margin-top:4px">${esc(order.delivery_address)}</p>
     </div>
 
-    <a class="btn block" href="/shop/index.html" style="text-align:center;display:block">Continue shopping</a>
+    <a class="btn block" href="/" style="text-align:center;display:block">Continue shopping</a>
   `
 }
 boot()

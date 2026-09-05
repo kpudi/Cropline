@@ -72,15 +72,32 @@ export async function deleteAddress(id) {
   await sb.from('customer_addresses').delete().eq('id', id)
 }
 
+/* ---- offers / promo codes ---- */
+export async function validateOffer(code, subtotal) {
+  const clean = String(code || '').trim()
+  if (!clean) return null
+  const { data } = await sb.from('offers').select('*').ilike('code', clean).eq('active', true).maybeSingle()
+  if (!data) throw new Error('That promo code is invalid or no longer active.')
+  const today = new Date().toISOString().slice(0, 10)
+  if (data.valid_from && data.valid_from > today) throw new Error('That promo code is not active yet.')
+  if (data.valid_to && data.valid_to < today) throw new Error('That promo code has expired.')
+  if (subtotal < (+data.min_order || 0)) throw new Error(`This code needs a minimum order of ${money0(data.min_order)}.`)
+  const discount = data.type === 'percent' ? subtotal * (+data.value / 100) : +data.value
+  return { code: data.code, label: data.label, discount: Math.min(Math.max(discount, 0), subtotal) }
+}
+function money0(n) { return '₹' + Math.round(n || 0).toLocaleString('en-IN') }
+
 /* ---- orders ---- */
-export async function placeOrder({ customerId, clientId, addressId, contactName, contactPhone, deliveryArea, deliveryAddress, lines, subtotal, deliveryFee, total, paymentMethod, notes }) {
+export async function placeOrder({ customerId, clientId, addressId, contactName, contactPhone, deliveryArea, deliveryAddress, lines, subtotal, deliveryFee, total, paymentMethod, notes, promoCode, discountAmount }) {
   const { data: order, error } = await sb.from('orders').insert({
     customer_id: customerId, client_id: clientId || null, address_id: addressId || null,
     source: 'storefront', status: 'pending', payment_method: paymentMethod,
     payment_status: paymentMethod === 'cod' ? 'unpaid' : 'unpaid',
     contact_name: contactName, contact_phone: contactPhone,
     delivery_area: deliveryArea, delivery_address: deliveryAddress,
-    subtotal, delivery_fee: deliveryFee || 0, total, notes: notes || ''
+    subtotal, delivery_fee: deliveryFee || 0, total,
+    promo_code: promoCode || null, discount_amount: discountAmount || 0,
+    notes: notes || ''
   }).select('*').single()
   if (error) throw error
   await sb.from('order_lines').insert(lines.map((l, k) => ({

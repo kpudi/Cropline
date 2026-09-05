@@ -15,6 +15,31 @@ the two Razorpay env vars whenever you're ready to switch it on (works with
 Razorpay as-is; a different provider would need its `/api` functions swapped
 in following the same pattern).
 
+## Round 3 changes (this update)
+
+- Fixed: the paste-WhatsApp popup wouldn't close (a CSS bug, now fixed
+  everywhere it could recur — see `[hidden]{display:none!important}` in
+  `src/shop/shop.css`).
+- Checkout now shows an itemized order summary (name, quantity, price per
+  line), not just a total.
+- Admin panel header has a **"View storefront ↗"** button that opens `/` in
+  a new tab.
+- Items tab: product name, category, and unit are now editable inline
+  (previously only the buying/cash rates were).
+- New **Offers** tab: create promo codes (percent or flat discount, optional
+  minimum order and date range). Customers enter the code at checkout.
+
+### If `/` still isn't showing the shop after this update
+That's almost certainly because `vercel.json` didn't get uploaded to the
+**root** of the repo. GitHub's drag-and-drop uploader puts files wherever
+you were browsing when you opened "Add file → Upload files" — if you were
+inside a subfolder, `vercel.json` landed there instead of at the top level,
+where Vercel requires it. Go to the **repo's root listing** on github.com
+(click the repo name / the breadcrumb all the way back) — you should see
+`vercel.json` sitting next to `package.json` and `index.html`, not nested
+inside `shop/` or `src/`. If it's missing or misplaced from the root, delete
+the stray copy and re-upload it from the root page specifically.
+
 ## 0. Why you're getting a zip instead of a pushed branch
 
 This session doesn't have push access to `kpudi/Cropline` (no GitHub App /

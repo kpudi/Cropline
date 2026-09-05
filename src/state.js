@@ -7,7 +7,7 @@ export const S = reactive({
   // data
   settings: { biz: 'Cropline', addr: '', phone: '', gstin: '', terms: 'Payment due on delivery.', prefix: 'SS' },
   nextNo: 1,
-  items: [], clients: [], bills: [], orders: [], customers: [],
+  items: [], clients: [], bills: [], orders: [], customers: [], offers: [],
   // UI
   tab: 'bill', loading: false, saving: false, saveErr: '',
   // draft bill

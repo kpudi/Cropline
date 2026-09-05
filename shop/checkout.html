@@ -31,9 +31,23 @@
     <button class="btn pri block" id="naSave">Save address</button>
   </div>
 
+  <div class="panel" id="itemsPanel">
+    <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">Order summary</h2>
+    <div id="itemsList"></div>
+  </div>
+
   <div class="panel" id="paymentPanel">
     <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">Payment method</h2>
     <!-- Online payment option is added here by checkout-page.js once a provider is enabled. -->
+  </div>
+
+  <div class="panel">
+    <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">Promo code</h2>
+    <div style="display:flex;gap:8px">
+      <input class="inp" id="promoInput" placeholder="Enter code">
+      <button class="btn" id="promoApply" style="white-space:nowrap">Apply</button>
+    </div>
+    <div id="promoMsg" class="hint" style="margin-top:8px"></div>
   </div>
 
   <div class="panel" id="totals"></div>
