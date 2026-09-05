@@ -15,7 +15,24 @@ the two Razorpay env vars whenever you're ready to switch it on (works with
 Razorpay as-is; a different provider would need its `/api` functions swapped
 in following the same pattern).
 
-## Round 3 changes (this update)
+## Round 4: routing fix, done properly this time
+
+The `vercel.json` rewrite approach depended on that file landing exactly at
+the repo root during a manual GitHub upload, and it kept not landing there.
+So instead of a config file, the site is now physically restructured:
+
+- `index.html` (repo root) **is** the storefront now — literally the file
+  that used to be `shop/index.html`.
+- The admin/billing app moved to `admin/index.html` — visit it at
+  `https://cropline-ruddy.vercel.app/admin/` (note the trailing slash).
+- `vercel.json` is deleted — no longer needed, one less thing to place
+  correctly.
+
+This is enforced by `vite.config.js` (which file builds to which URL), not
+by a separate config Vercel has to notice — so as long as the build succeeds
+at all, this routing is guaranteed correct. Bookmark `/admin/` for daily use.
+
+## Round 3 changes (previous update)
 
 - Fixed: the paste-WhatsApp popup wouldn't close (a CSS bug, now fixed
   everywhere it could recur — see `[hidden]{display:none!important}` in

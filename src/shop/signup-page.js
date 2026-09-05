@@ -17,7 +17,7 @@ form.addEventListener('submit', async e => {
       email: fd.get('email'), pw: fd.get('pw'), name: fd.get('name'),
       phone: fd.get('phone'), businessName: fd.get('businessName'), termsVersion: 'v1'
     })
-    location.href = '/shop/index.html'
+    location.href = '/'
   } catch (e2) {
     err.textContent = e2.message || 'Could not create account.'
     err.hidden = false

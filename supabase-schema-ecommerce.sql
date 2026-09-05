@@ -26,9 +26,9 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- >>> IMPORTANT: after running this file once, seed yourself as admin:
---   insert into admins (id) select id from auth.users where email = 'hskuchampudi@gmail.com'
+--   insert into admins (id) select id from auth.users where email = 'YOUR-ADMIN-LOGIN-EMAIL'
 --   on conflict do nothing;
--- (Any account you use to log into the existing Cropline admin panel.)
+-- (Whatever email you use to log into the existing Cropline admin panel.)
 
 -- ---------------------------------------------------------------------
 -- 2. CUSTOMERS

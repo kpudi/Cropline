@@ -2,7 +2,7 @@ import { signInCustomer } from './shop-db.js'
 
 const form = document.getElementById('loginForm')
 const err = document.getElementById('err')
-const next = new URLSearchParams(location.search).get('next') || '/shop/index.html'
+const next = new URLSearchParams(location.search).get('next') || '/'
 
 form.addEventListener('submit', async e => {
   e.preventDefault()

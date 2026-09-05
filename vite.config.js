@@ -6,8 +6,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        shopIndex: resolve(__dirname, 'shop/index.html'),
+        main: resolve(__dirname, 'index.html'), // this IS the storefront now — root is the shop
+        admin: resolve(__dirname, 'admin/index.html'), // the billing/admin app lives here
         shopCart: resolve(__dirname, 'shop/cart.html'),
         shopCheckout: resolve(__dirname, 'shop/checkout.html'),
         shopLogin: resolve(__dirname, 'shop/login.html'),
