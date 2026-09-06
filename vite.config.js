@@ -8,6 +8,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'), // this IS the storefront now — root is the shop
         admin: resolve(__dirname, 'admin/index.html'), // the billing/admin app lives here
+        shopCatalog: resolve(__dirname, 'shop/catalog.html'),
         shopCart: resolve(__dirname, 'shop/cart.html'),
         shopCheckout: resolve(__dirname, 'shop/checkout.html'),
         shopLogin: resolve(__dirname, 'shop/login.html'),

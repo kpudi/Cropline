@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop — Cropline</title>
+<link rel="stylesheet" href="/src/shop/shop.css">
+<body>
+<header class="shop-bar" id="shopHeader"></header>
+<div class="wrap">
+  <div class="catalog-head">
+    <h1>Today's produce</h1>
+    <p class="hint">Prices update daily. Contracted clients see their own rate automatically.</p>
+  </div>
+  <div class="panel" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:0">
+    <input class="inp" id="search" placeholder="Search vegetables, fruits, herbs…" style="flex:1;min-width:200px">
+    <button class="btn" id="pasteBtn">📋 Paste WhatsApp order</button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <div id="loading" class="center-msg"><div class="spin"></div>Loading catalog…</div>
+  <div class="grid" id="grid" hidden></div>
+</div>
+<footer class="shop-foot" id="shopFooter"></footer>
+
+<!-- paste-order modal -->
+<div class="scrim" id="pasteScrim" hidden>
+  <div class="panel" style="max-width:560px;width:100%;max-height:85vh;overflow:auto;position:relative">
+    <button id="pasteClose" aria-label="Close" style="position:absolute;top:12px;right:12px;font-size:20px;line-height:1;color:var(--muted);padding:4px 8px">×</button>
+    <h2 style="font-family:'Fraunces',serif;font-size:18px;margin-bottom:10px">Paste your WhatsApp order</h2>
+    <p class="hint" style="margin-bottom:10px">Paste the order list exactly as you'd send it on WhatsApp — misspellings and Hindi names are fine.</p>
+    <textarea class="inp" id="pasteText" rows="8" placeholder="e.g.&#10;2kg onion&#10;1 kg tamatar&#10;500gm dhania"></textarea>
+    <div id="pasteResult" style="margin-top:12px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" id="pasteCancel">Cancel</button>
+      <button class="btn pri block" id="pasteParse">Match items</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="/src/shop/shop-main.js"></script>

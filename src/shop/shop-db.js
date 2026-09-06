@@ -79,7 +79,10 @@ export async function myCustomerRow() {
 /* ---- catalog ---- */
 export async function loadCatalog() {
   const { data } = await sb.from('items').select('*').eq('active', true).order('category').order('name')
-  return (data || []).map(i => ({ id: i.id, name: i.name, unit: i.unit, cat: i.category || 'Other', sell: +i.cash_rate || 0 }))
+  return (data || []).map(i => ({
+    id: i.id, name: i.name, unit: i.unit, cat: i.category || 'Other', sell: +i.cash_rate || 0,
+    image: i.image_url || '', inStock: i.in_stock !== false
+  }))
 }
 
 // Resolve the customer's contracted rate card (if CSM-managed) as a
@@ -106,8 +109,8 @@ export async function loadAddresses() {
 export async function saveAddress(a) {
   const { data: { user } } = await sb.auth.getUser()
   const row = {
-    id: a.id, customer_id: user.id, label: a.label || 'Address', area: a.area || 'Custom',
-    line1: a.line1, line2: a.line2 || '', city: a.city || 'Hyderabad', pincode: a.pincode || '',
+    id: a.id, customer_id: user.id, label: a.label || 'Address', area: a.area || '',
+    line1: a.line1, line2: a.line2 || '', city: a.city || '', state: a.state || '', pincode: a.pincode || '',
     landmark: a.landmark || '', phone: a.phone || '', is_default: !!a.isDefault, created_by: a.createdBy || 'customer'
   }
   if (row.is_default) await sb.from('customer_addresses').update({ is_default: false }).eq('customer_id', user.id)

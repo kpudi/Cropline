@@ -276,6 +276,48 @@ alter table orders add column if not exists discount_amount numeric default 0;
 -- ---------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------
+-- 11. ROUND 7: real pan-India addresses (was hardcoded to 3 Hyderabad
+-- localities) + product photos + per-item in-stock toggle.
+-- ---------------------------------------------------------------------
+
+-- Addresses: "area" was a dropdown locked to 3 Hyderabad neighbourhoods,
+-- which is why every customer outside Hyderabad was stuck. It's now a
+-- free-text locality, and a proper "state" column is added so pincode
+-- lookups (city + state) can be stored, not just city.
+alter table customer_addresses drop constraint if exists customer_addresses_area_check;
+alter table customer_addresses alter column area drop not null;
+alter table customer_addresses alter column area set default '';
+alter table customer_addresses add column if not exists state text default '';
+
+-- Items: product photo + a simple in-stock switch so admins can 86 an
+-- item on the storefront without deleting it from the catalogue.
+alter table items add column if not exists image_url text default '';
+alter table items add column if not exists in_stock boolean default true;
+
+-- Storage bucket for product photos, uploaded from the admin Items tab.
+-- Public bucket (read-only to anyone, matching how product images work
+-- on any storefront) — writes are restricted to admins.
+insert into storage.buckets (id, name, public)
+  values ('product-images', 'product-images', true)
+  on conflict (id) do nothing;
+
+drop policy if exists "product images public read" on storage.objects;
+create policy "product images public read" on storage.objects
+  for select using (bucket_id = 'product-images');
+
+drop policy if exists "product images admin write" on storage.objects;
+create policy "product images admin write" on storage.objects
+  for insert with check (bucket_id = 'product-images' and is_admin());
+
+drop policy if exists "product images admin update" on storage.objects;
+create policy "product images admin update" on storage.objects
+  for update using (bucket_id = 'product-images' and is_admin());
+
+drop policy if exists "product images admin delete" on storage.objects;
+create policy "product images admin delete" on storage.objects
+  for delete using (bucket_id = 'product-images' and is_admin());
+
+-- ---------------------------------------------------------------------
 -- Done. Next: seed the admins table (see step 1 comment above), then
 -- deploy the app with the new Vercel env vars documented in SETUP.md.
 -- =====================================================================

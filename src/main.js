@@ -1,6 +1,6 @@
 import { sb, signIn, signOut, getSession,
          loadSettings, saveSettings,
-         loadItems, upsertItem, setBuyRate,
+         loadItems, upsertItem, uploadItemImage, setBuyRate,
          loadClients, upsertClient, upsertCard,
          loadBills, saveBill,
          loadOrders, updateOrderStatus,
@@ -312,6 +312,22 @@ window._setBuy = (i,val,d) => {
   queue('buy',{id:it.id,date:d,rate:r})
 }
 window._setCashRate = (i,v) => { S.items[i].sell=+v||0; queue('item',S.items[i]) }
+window._setInStock = (i,checked) => { S.items[i].inStock=!!checked; queue('item',S.items[i]) }
+window._pickItemPhoto = i => { document.getElementById('photoInput'+i)?.click() }
+window._uploadItemPhoto = async (i,file) => {
+  if (!file) return
+  const it = S.items[i]
+  toast('Uploading photo…')
+  try {
+    const url = await uploadItemImage(it.id, file)
+    it.image = url
+    queue('item', it)
+    render()
+    toast('Photo updated')
+  } catch (e) {
+    toast('Photo upload failed: ' + (e.message || 'unknown error'))
+  }
+}
 window._setItemName = (i,v) => { S.items[i].name=v; queue('item',S.items[i]) }
 window._setItemUnit = (i,v) => { S.items[i].unit=v; queue('item',S.items[i]) }
 window._setItemCat  = (i,v) => { S.items[i].cat=v; queue('item',S.items[i]); render() }

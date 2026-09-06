@@ -21,13 +21,16 @@
   <div class="panel" id="newAddrPanel" hidden>
     <h2 style="font-size:14px;font-weight:600;margin-bottom:10px">New address</h2>
     <label class="f"><span>Label</span><input class="inp" id="naLabel" placeholder="Home, Restaurant, Kitchen…"></label>
-    <label class="f"><span>Area</span>
-      <select class="inp" id="naArea"><option>Kukatpally</option><option>Madhapur</option><option>Gachibowli</option><option>Custom</option></select>
-    </label>
+    <label class="f"><span>Pincode</span><input class="inp" id="naPin" inputmode="numeric" maxlength="6" placeholder="6-digit PIN code"></label>
+    <div id="naPinHint" class="hint" style="margin:-8px 0 12px"></div>
+    <div style="display:flex;gap:10px">
+      <label class="f" style="flex:1"><span>City</span><input class="inp" id="naCity" placeholder="Auto-filled from pincode"></label>
+      <label class="f" style="flex:1"><span>State</span><input class="inp" id="naState" placeholder="Auto-filled from pincode"></label>
+    </div>
+    <label class="f"><span>Locality / Area</span><input class="inp" id="naArea" placeholder="Neighbourhood or post office area"></label>
     <label class="f"><span>Address line 1</span><input class="inp" id="naLine1" required></label>
     <label class="f"><span>Address line 2 / landmark</span><input class="inp" id="naLine2"></label>
-    <label class="f"><span>Pincode</span><input class="inp" id="naPin"></label>
-    <label class="f"><span>Contact phone</span><input class="inp" id="naPhone" required></label>
+    <label class="f"><span>Contact phone</span><input class="inp" id="naPhone" required placeholder="10-digit mobile number"></label>
     <button class="btn pri block" id="naSave">Save address</button>
   </div>
 

@@ -1,6 +1,6 @@
 import { requireCustomer, wireLogout } from './shop-auth.js'
 import { myOrders, loadAddresses, saveAddress, deleteAddress } from './shop-db.js'
-import { renderShell, money, dmyTime, esc, STATUS_LABEL, AREAS } from './util.js'
+import { renderShell, money, dmyTime, esc, STATUS_LABEL, lookupPincode } from './util.js'
 
 renderShell('orders')
 wireLogout()
@@ -56,9 +56,9 @@ function paintAddrCards() {
   if (!addresses.length) { wrap.innerHTML = '<p class="hint">No saved addresses yet.</p>'; return }
   wrap.innerHTML = addresses.map(a => `
     <div class="addr-card" data-id="${a.id}">
-      <span class="area-tag">${esc(a.area)}</span>${a.is_default ? ' <span class="hint">Default</span>' : ''}
+      ${a.area ? `<span class="area-tag">${esc(a.area)}</span>` : ''}${a.is_default ? ' <span class="hint">Default</span>' : ''}
       <b>${esc(a.label)}</b>
-      <p>${esc(a.line1)}${a.line2 ? ', ' + esc(a.line2) : ''}, ${esc(a.city)} ${esc(a.pincode)}<br>Phone: ${esc(a.phone)}</p>
+      <p>${esc(a.line1)}${a.line2 ? ', ' + esc(a.line2) : ''}, ${esc(a.city)}${a.state ? ', ' + esc(a.state) : ''} ${esc(a.pincode)}<br>Phone: ${esc(a.phone)}</p>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn sm" data-act="edit">Edit</button>
         <button class="btn sm danger" data-act="del">Delete</button>
@@ -78,23 +78,50 @@ function openForm(a) {
   form.hidden = false
   form.innerHTML = `
     <label class="f"><span>Label</span><input class="inp" id="fLabel" value="${esc(a?.label || '')}" placeholder="Home, Restaurant, Kitchen…"></label>
-    <label class="f"><span>Area</span><select class="inp" id="fArea">${AREAS.map(ar => `<option ${a?.area === ar ? 'selected' : ''}>${ar}</option>`).join('')}</select></label>
+    <label class="f"><span>Pincode</span><input class="inp" id="fPin" value="${esc(a?.pincode || '')}" inputmode="numeric" maxlength="6" placeholder="6-digit PIN code"></label>
+    <div id="fPinHint" class="hint" style="margin:-8px 0 12px"></div>
+    <div style="display:flex;gap:10px">
+      <label class="f" style="flex:1"><span>City</span><input class="inp" id="fCity" value="${esc(a?.city || '')}" placeholder="Auto-filled from pincode"></label>
+      <label class="f" style="flex:1"><span>State</span><input class="inp" id="fState" value="${esc(a?.state || '')}" placeholder="Auto-filled from pincode"></label>
+    </div>
+    <label class="f"><span>Locality / Area</span><input class="inp" id="fArea" value="${esc(a?.area || '')}" placeholder="Neighbourhood or post office area"></label>
     <label class="f"><span>Address line 1</span><input class="inp" id="fLine1" value="${esc(a?.line1 || '')}"></label>
     <label class="f"><span>Address line 2 / landmark</span><input class="inp" id="fLine2" value="${esc(a?.line2 || '')}"></label>
-    <label class="f"><span>Pincode</span><input class="inp" id="fPin" value="${esc(a?.pincode || '')}"></label>
-    <label class="f"><span>Contact phone</span><input class="inp" id="fPhone" value="${esc(a?.phone || '')}"></label>
+    <label class="f"><span>Contact phone</span><input class="inp" id="fPhone" value="${esc(a?.phone || '')}" placeholder="10-digit mobile number"></label>
     <label class="chk"><input type="checkbox" id="fDefault" ${a?.is_default ? 'checked' : ''}><span>Set as default address</span></label>
     <div style="display:flex;gap:8px"><button class="btn" id="fCancel">Cancel</button><button class="btn pri" id="fSave" style="flex:1">Save address</button></div>
   `
   document.getElementById('fCancel').addEventListener('click', () => form.hidden = true)
+  const fPin = document.getElementById('fPin'), fPinHint = document.getElementById('fPinHint')
+  fPin.addEventListener('input', () => { fPin.value = fPin.value.replace(/\D/g, '').slice(0, 6) })
+  fPin.addEventListener('blur', async () => {
+    if (fPin.value.length !== 6) return
+    fPinHint.textContent = 'Looking up pincode…'
+    const found = await lookupPincode(fPin.value)
+    if (found) {
+      document.getElementById('fCity').value = found.city
+      document.getElementById('fState').value = found.state
+      if (!document.getElementById('fArea').value) document.getElementById('fArea').value = found.area
+      fPinHint.textContent = `${found.area ? found.area + ', ' : ''}${found.city}, ${found.state}`
+      fPinHint.style.color = 'var(--leaf)'
+    } else {
+      fPinHint.textContent = "Couldn't find that pincode — enter city/state manually."
+      fPinHint.style.color = 'var(--red)'
+    }
+  })
   document.getElementById('fSave').addEventListener('click', async () => {
+    const phone = document.getElementById('fPhone').value.trim().replace(/\D/g, '')
+    if (!/^[6-9]\d{9}$/.test(phone)) { alert('Enter a valid 10-digit mobile number.'); return }
+    const pincode = document.getElementById('fPin').value
+    if (!/^\d{6}$/.test(pincode)) { alert('Enter a valid 6-digit pincode.'); return }
     const row = {
       id: a?.id, label: document.getElementById('fLabel').value || 'Address',
       area: document.getElementById('fArea').value, line1: document.getElementById('fLine1').value,
-      line2: document.getElementById('fLine2').value, pincode: document.getElementById('fPin').value,
-      phone: document.getElementById('fPhone').value, isDefault: document.getElementById('fDefault').checked
+      line2: document.getElementById('fLine2').value, pincode,
+      city: document.getElementById('fCity').value, state: document.getElementById('fState').value,
+      phone, isDefault: document.getElementById('fDefault').checked
     }
-    if (!row.line1 || !row.phone) { alert('Address line 1 and phone are required.'); return }
+    if (!row.line1) { alert('Address line 1 is required.'); return }
     const saved = await saveAddress(row)
     if (a) addresses = addresses.map(x => x.id === saved.id ? saved : x)
     else addresses.push(saved)

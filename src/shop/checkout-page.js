@@ -1,7 +1,7 @@
 import { requireCustomer } from './shop-auth.js'
 import { loadAddresses, saveAddress, placeOrder, loadCatalog, loadPricingForCustomer, validateOffer, sb } from './shop-db.js'
 import { getCart, cartTotals, clearCart, repriceCart } from './cart.js'
-import { renderShell, money, esc } from './util.js'
+import { renderShell, money, esc, lookupPincode } from './util.js'
 
 // Online payment is switched off until a provider is chosen — the Razorpay
 // integration below is fully wired but dormant. To re-enable: flip this to
@@ -69,9 +69,9 @@ function renderAddresses() {
   if (!addresses.length) { list.innerHTML = '<p class="hint">No saved addresses yet — add one below.</p>'; return }
   list.innerHTML = addresses.map(a => `
     <div class="addr-card ${selectedAddr?.id === a.id ? 'on' : ''}" data-id="${a.id}">
-      <span class="area-tag">${esc(a.area)}</span>
+      ${a.area ? `<span class="area-tag">${esc(a.area)}</span>` : ''}
       <b>${esc(a.label)}</b>
-      <p>${esc(a.line1)}${a.line2 ? ', ' + esc(a.line2) : ''}, ${esc(a.city)} ${esc(a.pincode)}<br>Phone: ${esc(a.phone)}</p>
+      <p>${esc(a.line1)}${a.line2 ? ', ' + esc(a.line2) : ''}, ${esc(a.city)}${a.state ? ', ' + esc(a.state) : ''} ${esc(a.pincode)}<br>Phone: ${esc(a.phone)}</p>
     </div>`).join('')
   list.querySelectorAll('.addr-card').forEach(el => el.addEventListener('click', () => {
     selectedAddr = addresses.find(a => a.id === el.getAttribute('data-id')); renderAddresses()
@@ -81,17 +81,41 @@ function renderAddresses() {
 document.getElementById('newAddrBtn').addEventListener('click', () => {
   document.getElementById('newAddrPanel').hidden = false
 })
+
+const naPin = document.getElementById('naPin'), naPinHint = document.getElementById('naPinHint')
+naPin.addEventListener('input', () => { naPin.value = naPin.value.replace(/\D/g, '').slice(0, 6) })
+naPin.addEventListener('blur', async () => {
+  if (naPin.value.length !== 6) return
+  naPinHint.textContent = 'Looking up pincode…'
+  const found = await lookupPincode(naPin.value)
+  if (found) {
+    document.getElementById('naCity').value = found.city
+    document.getElementById('naState').value = found.state
+    if (!document.getElementById('naArea').value) document.getElementById('naArea').value = found.area
+    naPinHint.textContent = `${found.area ? found.area + ', ' : ''}${found.city}, ${found.state}`
+    naPinHint.style.color = 'var(--leaf)'
+  } else {
+    naPinHint.textContent = "Couldn't find that pincode — enter city/state manually."
+    naPinHint.style.color = 'var(--red)'
+  }
+})
+
 document.getElementById('naSave').addEventListener('click', async () => {
+  const phone = document.getElementById('naPhone').value.trim()
+  if (!/^[6-9]\d{9}$/.test(phone.replace(/\D/g, ''))) { alert('Enter a valid 10-digit mobile number.'); return }
   const a = {
     label: document.getElementById('naLabel').value || 'Address',
     area: document.getElementById('naArea').value,
     line1: document.getElementById('naLine1').value,
     line2: document.getElementById('naLine2').value,
     pincode: document.getElementById('naPin').value,
-    phone: document.getElementById('naPhone').value,
+    city: document.getElementById('naCity').value,
+    state: document.getElementById('naState').value,
+    phone: phone.replace(/\D/g, ''),
     isDefault: addresses.length === 0
   }
-  if (!a.line1 || !a.phone) { alert('Address line 1 and phone are required.'); return }
+  if (!a.line1) { alert('Address line 1 is required.'); return }
+  if (!/^\d{6}$/.test(a.pincode)) { alert('Enter a valid 6-digit pincode.'); return }
   const saved = await saveAddress(a)
   addresses.push(saved); selectedAddr = saved
   document.getElementById('newAddrPanel').hidden = true
@@ -124,7 +148,7 @@ document.getElementById('placeBtn').addEventListener('click', async () => {
     const order = await placeOrder({
       customerId: customer.id, clientId: customer.client_id, addressId: selectedAddr.id,
       contactName: customer.full_name, contactPhone: selectedAddr.phone,
-      deliveryArea: selectedAddr.area, deliveryAddress: `${selectedAddr.line1}, ${selectedAddr.line2 || ''}, ${selectedAddr.city} ${selectedAddr.pincode}`,
+      deliveryArea: selectedAddr.area, deliveryAddress: `${selectedAddr.line1}, ${selectedAddr.line2 || ''}, ${selectedAddr.city}, ${selectedAddr.state || ''} ${selectedAddr.pincode}`,
       lines: cart, subtotal: t.subtotal, deliveryFee: t.deliveryFee, total,
       promoCode: offer?.code || null, discountAmount: discount, paymentMethod: pm
     })

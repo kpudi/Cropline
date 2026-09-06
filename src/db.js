@@ -39,16 +39,29 @@ export async function loadItems() {
     const h = hist[i.id] || []
     const last = h[h.length - 1]
     return { id: i.id, name: i.name, unit: i.unit, cat: i.category || 'Other',
-      sell: +i.cash_rate || 0, hist: h, buy: last ? last.r : 0, buyOn: last ? last.d : '' }
+      sell: +i.cash_rate || 0, hist: h, buy: last ? last.r : 0, buyOn: last ? last.d : '',
+      image: i.image_url || '', inStock: i.in_stock !== false }
   })
 }
 export async function upsertItem(it) {
   const uid = await own()
   const { data } = await sb.from('items').upsert({
     id: it.id, owner: uid, name: it.name.trim(), unit: it.unit,
-    category: it.cat || 'Other', cash_rate: +it.sell || 0
+    category: it.cat || 'Other', cash_rate: +it.sell || 0,
+    image_url: it.image || '', in_stock: it.inStock !== false
   }, { onConflict: 'id' }).select('id').single()
   return data?.id || it.id
+}
+
+// Uploads a product photo to the public "product-images" Storage bucket
+// and returns its public URL. Called from the Items tab's upload button.
+export async function uploadItemImage(itemId, file) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `${itemId}-${Date.now()}.${ext}`
+  const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true, cacheControl: '3600' })
+  if (error) throw error
+  const { data } = sb.storage.from('product-images').getPublicUrl(path)
+  return data.publicUrl
 }
 export async function setBuyRate(itemId, date, rate) {
   const uid = await own()

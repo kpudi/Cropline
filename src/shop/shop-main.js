@@ -6,7 +6,7 @@ import { parseList } from '../parser.js'
 
 renderShell('shop')
 
-let catalog = [], rateMap = {}, activeCat = 'All', query = ''
+let catalog = [], rateMap = {}, activeCat = new URLSearchParams(location.search).get('cat') || 'All', query = ''
 
 async function boot() {
   const cust = await optionalCustomer()
@@ -40,13 +40,16 @@ function renderGrid() {
   const cartMap = {}; getCart().forEach(l => cartMap[l.name.toLowerCase()] = l.qty)
   grid.innerHTML = list.map(i => {
     const inCart = cartMap[i.name.toLowerCase()] || 0
-    return `<div class="card" data-name="${esc(i.name)}">
-      <div class="thumb">🥬</div>
+    const outOfStock = i.inStock === false
+    return `<div class="card${outOfStock ? ' oos' : ''}" data-name="${esc(i.name)}">
+      <div class="thumb">${i.image ? `<img src="${esc(i.image)}" alt="${esc(i.name)}" loading="lazy">` : '🥬'}</div>
       <div class="cname">${esc(i.name)}</div>
       <div class="ccat">${esc(i.cat)} · per ${esc(i.unit)}</div>
       <div class="crow">
         <div class="cprice">${money(i.effRate)}${i.contracted ? '<small><br>your rate</small>' : ''}</div>
-        ${inCart
+        ${outOfStock
+          ? `<span class="oos-tag">Out of stock</span>`
+          : inCart
           ? `<div class="qtybox"><button data-act="dec">−</button><input class="num" data-qty value="${inCart}" inputmode="decimal"><button data-act="inc">+</button></div>`
           : `<button class="addbtn" data-act="add">Add</button>`}
       </div>
@@ -55,6 +58,7 @@ function renderGrid() {
   grid.querySelectorAll('.card').forEach(card => {
     const name = card.getAttribute('data-name')
     const item = catalog.find(i => i.name === name)
+    if (item?.inStock === false) return
     card.querySelector('[data-act="add"]')?.addEventListener('click', () => {
       addToCart({ id: item.id, name: item.name, unit: item.unit, rate: item.effRate }, 1)
       toast(item.name + ' added to cart')

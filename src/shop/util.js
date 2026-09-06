@@ -9,7 +9,24 @@ export const dmyTime = s => { const d = new Date(s); return isNaN(d) ? s : d.toL
 export const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
 export const CATS = ['Indian Veg', 'Leafy Veg', 'Exotic Veg', 'Fresh Fruits', 'Frozen & Premium', 'Other']
-export const AREAS = ['Kukatpally', 'Madhapur', 'Gachibowli', 'Custom']
+
+// Looks up an Indian PIN code via the free, keyless India Post API and
+// returns { city, state, area } (area = a suggested locality/post-office
+// name the person can keep or overwrite). Works for any Indian pincode,
+// not just Hyderabad. Returns null if the code isn't found or the API
+// is unreachable — callers should fail open and let the person type the
+// city/state themselves rather than block on this.
+export async function lookupPincode(pincode) {
+  const clean = String(pincode || '').trim()
+  if (!/^\d{6}$/.test(clean)) return null
+  try {
+    const res = await fetch(`https://api.postalpincode.in/pincode/${clean}`)
+    const [data] = await res.json()
+    if (data?.Status !== 'Success' || !data.PostOffice?.length) return null
+    const po = data.PostOffice[0]
+    return { city: po.District || '', state: po.State || '', area: po.Name || '' }
+  } catch { return null }
+}
 
 export const STATUS_LABEL = {
   pending: 'Order placed', confirmed: 'Confirmed', packed: 'Packed',
@@ -34,17 +51,19 @@ export function renderShell(active, { showFooter = true } = {}) {
       <div class="inner">
         <a href="/" class="mark">Cropline<small>Fresh, direct to your kitchen</small></a>
         <nav class="shopnav">
-          <a href="/" data-nav="shop">Shop</a>
+          <a href="/shop/catalog.html" data-nav="shop">Shop</a>
           <a href="/shop/account.html" data-nav="orders">My Orders</a>
           <a href="/shop/account.html#addresses" data-nav="addresses">Addresses</a>
-          <a href="/shop/cart.html" class="cart-btn" data-nav="cart">Cart <span class="badge" data-cart-count hidden>0</span></a>
+          <a href="/shop/cart.html" class="cart-btn" data-nav="cart">Cart <span data-cart-amt></span><span class="badge" data-cart-count hidden>0</span></a>
+          <a href="/shop/login.html" class="btn sm" data-nav="signin" data-signin>Sign in</a>
         </nav>
       </div>`
     header.querySelectorAll('[data-nav]').forEach(a => { if (a.getAttribute('data-nav') === active) a.classList.add('on') })
+    checkAuthUI()
   }
   const footer = document.getElementById('shopFooter')
   if (footer && showFooter) {
-    footer.innerHTML = `Cropline &middot; Hyderabad
+    footer.innerHTML = `Cropline &middot; Fresh produce, delivered
       <div style="margin-top:6px">
         <a href="/shop/terms.html">Terms</a>&middot;
         <a href="/shop/privacy.html">Privacy</a>&middot;
@@ -53,13 +72,23 @@ export function renderShell(active, { showFooter = true } = {}) {
   }
   updateCartBadge()
 }
+async function checkAuthUI() {
+  const btn = document.querySelector('[data-signin]')
+  if (!btn) return
+  try {
+    const { getSession } = await import('./shop-db.js')
+    const { data: { session } } = await getSession()
+    if (session) { btn.textContent = 'My account'; btn.href = '/shop/account.html' }
+  } catch {}
+}
 export function updateCartBadge() {
-  const el = document.querySelector('[data-cart-count]')
-  if (!el) return
+  const countEl = document.querySelector('[data-cart-count]')
+  const amtEl = document.querySelector('[data-cart-amt]')
   try {
     const cart = JSON.parse(localStorage.getItem('cropline_cart') || '[]')
     const n = cart.reduce((s, l) => s + 1, 0)
-    el.textContent = n
-    el.hidden = n === 0
-  } catch { el.hidden = true }
+    const amt = cart.reduce((s, l) => s + (+l.qty || 0) * (+l.rate || 0), 0)
+    if (countEl) { countEl.textContent = n; countEl.hidden = n === 0 }
+    if (amtEl) amtEl.textContent = amt ? money0(amt) : ''
+  } catch { if (countEl) countEl.hidden = true }
 }
